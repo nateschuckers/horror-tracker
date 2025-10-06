@@ -270,6 +270,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             // #####################################################################
             // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
+            // #  (Make sure they are inside the single quotes '')                 #
             // #####################################################################
             const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
@@ -867,6 +868,7 @@
             toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
             toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
 
+            
             const firstTab = document.querySelector('.tab-link');
             const firstTabContent = document.getElementById(firstTab.dataset.tab);
             firstTab.classList.add('active');
