@@ -267,604 +267,608 @@
                 <div id="personalRatingSection" class="my-6"> <p class="text-sm text-gray-500 mb-2">MY RATING</p> <div class="skull-rating text-lg md:text-xl flex flex-wrap"> <i class="fas fa-skull p-1" data-value="1"></i><i class="fas fa-skull p-1" data-value="2"></i><i class="fas fa-skull p-1" data-value="3"></i><i class="fas fa-skull p-1" data-value="4"></i><i class="fas fa-skull p-1" data-value="5"></i><i class="fas fa-skull p-1" data-value="6"></i><i class="fas fa-skull p-1" data-value="7"></i><i class="fas fa-skull p-1" data-value="8"></i><i class="fas fa-skull p-1" data-value="9"></i><i class="fas fa-skull p-1" data-value="10"></i> </div> </div> <h3 class="text-xl font-bold text-gray-300 mt-6 mb-2">Overview</h3> <p id="modalOverview" class="text-gray-400 mb-6">Movie overview goes here...</p> <div id="modalButtons" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-6"></div> </div> </div> </div> </div>
 
     <script>
-        // IMPORTANT: REPLACE THESE WITH YOUR OWN SUPABASE KEYS
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const { createClient } = supabase;
-        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // DOM Elements
-        const loader = document.getElementById('loader');
-        const surpriseBtn = document.getElementById('surpriseBtn');
-        const searchContainer = document.getElementById('searchContainer');
-        const searchButton = document.getElementById('searchButton');
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const liveSearchResults = document.getElementById('liveSearchResults');
-        const watchListContainer = document.getElementById('watchList');
-        const watchedListContainer = document.getElementById('watchedList');
-        const rewatchStatsContainer = document.getElementById('rewatchStatsContainer');
-        const messageModal = document.getElementById('messageModal');
-        const modalMessage = document.getElementById('modalMessage');
-        const modalIcon = document.getElementById('modalIcon');
-        const movieDetailModal = document.getElementById('movieDetailModal');
-        const ratingModal = document.getElementById('ratingModal');
-        const goalModal = document.getElementById('goalModal');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const tabs = document.querySelectorAll('.tab-link');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const sortDropdowns = document.querySelectorAll('.sort-dropdown');
-        const toggleWatchedStatsBtn = document.getElementById('toggleWatchedStatsBtn');
-        const toggleWatchlistStatsBtn = document.getElementById('toggleWatchlistStatsBtn');
-        const newBloodTracker = document.getElementById('newBloodTracker');
-        const newBloodText = document.getElementById('newBloodText');
-        
-        // Chart instances
-        let directorsChartInstance, genresChartInstance;
-
-        // TMDB Config
-        const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
-        const HORROR_GENRE_ID = 27;
-        
-        // App State (will be populated from Supabase)
-        let watchListData = [];
-        let watchedListData = [];
-        let watchLog = [];
-        let currentWatchlistSort = 'title-asc';
-        let currentWatchedlistSort = 'recent';
-        let currentRewatchSort = 'watches';
-        let dashboardStatView = 'watched';
-        
-        // Utility Functions
-        const formatCurrency = (amount) => {
-            if (!amount) return "N/A";
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1
-            }).format(amount);
-        };
-        const getRatingColor = rating => { if (rating >= 7.6) return 'text-red-600'; if (rating >= 5.1) return 'text-green-400'; if (rating >= 2.6) return 'text-yellow-400'; return 'text-blue-400'; };
-        const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
-        
-        const calculateAverage = (movieList, key, usePersonalRating = false) => {
-            if (movieList.length === 0) return { avg: 0 };
-            let ratedMovies = movieList;
-            if (usePersonalRating) {
-                ratedMovies = movieList.filter(movie => movie.personal_rating);
-                if (ratedMovies.length === 0) return { avg: 0 };
-            }
-            const total = ratedMovies.reduce((acc, movie) => {
-                if (usePersonalRating) return acc + parseInt(movie.personal_rating || 0);
-                return acc + (movie[key] || 0);
-            }, 0);
-            const avg = total / ratedMovies.length;
-            return { avg };
-        };
-
-        // Modal Functions
-        const showModal = (title, type = 'info') => {
-            let message = '', iconHtml = '';
-            switch (type) {
-                case 'addWatchlist': message = `'${title}' has been summoned.`; iconHtml = '<i class="fas fa-eye text-blue-400"></i>'; break;
-                case 'alreadyExists': message = `'${title}' already haunts your lists.`; iconHtml = '<i class="fas fa-ghost text-yellow-400"></i>'; break;
-                case 'removedWatchlist': message = `'${title}' has vanished.`; iconHtml = '<i class="fas fa-eye-slash text-gray-500"></i>'; break;
-                case 'removedWatched': message = `'${title}' has been exorcised.`; iconHtml = '<i class="fas fa-ban text-red-500"></i>'; break;
-                default: message = title; iconHtml = '<i class="fas fa-info-circle text-gray-400"></i>';
-            }
-            modalMessage.textContent = message;
-            modalIcon.innerHTML = iconHtml;
-            messageModal.style.display = 'block';
-        };
-
-        const closeMessageModal = () => messageModal.style.display = 'none';
-        const closeGoalModal = () => goalModal.style.display = 'none';
-        const closeRatingModal = () => ratingModal.style.display = 'none';
-
-        const openRatingModal = (movie) => {
-            document.getElementById('ratingModalTitle').textContent = movie.title;
-            const skullContainer = ratingModal.querySelector('.skull-rating');
-            skullContainer.innerHTML = '';
-            for(let i = 1; i <= 10; i++) {
-                const skull = document.createElement('i');
-                skull.className = 'fas fa-skull p-1';
-                skull.dataset.value = i;
-                skullContainer.appendChild(skull);
-            }
-            setupSkullRating(movie.id, ratingModal);
-            ratingModal.style.display = 'block';
-        };
-
-        const openDetailModal = async (movieString) => {
-            const movie = JSON.parse(decodeURIComponent(movieString));
-            const modalContent = movieDetailModal.querySelector('.modal-content');
-            const modalTitle = document.getElementById('modalTitle');
-            const poster = document.getElementById('modalPoster');
-            
-            poster.src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
-            poster.onload = () => {
-                try {
-                    const colorThief = new ColorThief();
-                    const dominantColor = colorThief.getColor(poster);
-                    const color = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
-                    modalContent.style.borderColor = color;
-                    modalTitle.style.color = color;
-                } catch(e) { console.error("ColorThief Error:", e); modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; }
-            };
-            poster.onerror = () => { modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; };
-
-            modalTitle.textContent = movie.title;
-            document.getElementById('modalYearAndDirector').textContent = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
-            document.getElementById('modalRating').textContent = movie.vote_average.toFixed(1);
-            document.getElementById('modalPopularity').textContent = Math.round(movie.popularity);
-            document.getElementById('modalRatingContainer').className = 'text-2xl font-bold ' + getRatingColor(movie.vote_average);
-            document.getElementById('modalPopularityContainer').className = 'text-2xl font-bold ' + getPopularityColor(movie.popularity);
-            document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
-            document.getElementById('tmdbLink').href = `https://www.themoviedb.org/movie/${movie.id}`;
-            const movieStringForEvent = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
-            
-            const isMovieInWatchedList = watchedListData.some(m => m.id === movie.id);
-            document.getElementById('personalRatingSection').style.display = isMovieInWatchedList ? 'block' : 'none';
-            if (isMovieInWatchedList) setupSkullRating(movie.id, movieDetailModal);
-
-            const modalButtons = document.getElementById('modalButtons');
-            const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
-            let buttons = '';
-            if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
-            else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
-            else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
-            modalButtons.innerHTML = buttons;
-
-            const modalBudget = document.getElementById('modalBudget');
-            const modalRevenue = document.getElementById('modalRevenue');
-            const modalProfit = document.getElementById('modalProfit');
-            const modalProfitContainer = document.getElementById('modalProfitContainer');
-            modalBudget.textContent = '...'; modalRevenue.textContent = '...'; modalProfit.textContent = '...';
-            modalProfitContainer.classList.remove('text-red-500', 'text-green-400');
-            movieDetailModal.style.display = 'block';
-
-            const fullDetails = await fetchMovieById(movie.id);
-            if (fullDetails) {
-                 document.getElementById('modalYearAndDirector').textContent = `${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'} · ${fullDetails.director || 'Unknown'}`;
-                if (fullDetails.budget > 0 || fullDetails.revenue > 0) {
-                    const profit = fullDetails.revenue - fullDetails.budget;
-                    modalBudget.textContent = formatCurrency(fullDetails.budget);
-                    modalRevenue.textContent = formatCurrency(fullDetails.revenue);
-                    modalProfit.textContent = formatCurrency(profit);
-                    if (profit >= 0) modalProfitContainer.classList.add('text-green-400');
-                    else modalProfitContainer.classList.add('text-red-500');
-                } else {
-                    modalBudget.textContent = 'N/A'; modalRevenue.textContent = 'N/A'; modalProfit.textContent = 'N/A';
-                }
-            }
-        };
-
-        const closeDetailModal = () => {
-             movieDetailModal.style.display = 'none';
-             const modalContent = movieDetailModal.querySelector('.modal-content');
-             const modalTitle = document.getElementById('modalTitle');
-             modalContent.style.borderColor = '#4b5563';
-             modalTitle.style.color = '#ef4444';
-        };
-
-        // API Fetching
-        const fetchHorrorMovies = async query => {
-            searchResults.innerHTML = '';
-            loader.style.display = 'block';
-            if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return { error: 'Please enter your TMDB API key.' };
-            try {
-                const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                loader.style.display = 'none';
-                return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
-            } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
-        };
-        const fetchMovieById = async movieId => {
-            if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return null;
-            try {
-                const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits`);
-                if (!response.ok) return null;
-                const data = await response.json();
-                const director = data.credits.crew.find(person => person.job === 'Director');
-                data.director = director ? director.name : 'Unknown';
-                return data;
-            } catch (error) { console.error(`Error fetching movie ${movieId}:`, error); return null; }
-        };
-
-        // Main App Logic & Rendering
-        const renderDashboardStats = () => {
-            const currentYear = new Date().getFullYear();
-            const watchedThisYearLogs = watchLog.filter(log => log.year === currentYear);
-            const watchedThisYearMovies = watchedThisYearLogs.map(log => watchedListData.find(m => m.id === log.movieId)).filter(Boolean);
-            let listToDisplay, label1, label2, label3, value2, value3;
-            
-            if (dashboardStatView === 'watched') {
-                listToDisplay = watchedThisYearMovies;
-                label1 = 'Watched'; label2 = 'My Avg. Rating'; label3 = 'TMDb Avg. Rating';
-                value2 = calculateAverage(listToDisplay, 'vote_average', true);
-                value3 = calculateAverage(listToDisplay, 'vote_average');
-                toggleWatchedStatsBtn.classList.add('bg-red-800', 'text-white');
-                toggleWatchedStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
-                toggleWatchlistStatsBtn.classList.add('bg-secondary', 'text-gray-400');
-                toggleWatchlistStatsBtn.classList.remove('bg-red-800', 'text-white');
-            } else { // 'watchlist'
-                listToDisplay = watchListData;
-                label1 = 'In Watchlist'; label2 = 'TMDb Avg. Rating'; label3 = 'Avg. Popularity';
-                value2 = calculateAverage(listToDisplay, 'vote_average');
-                value3 = calculateAverage(listToDisplay, 'popularity');
-                toggleWatchlistStatsBtn.classList.add('bg-red-800', 'text-white');
-                toggleWatchlistStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
-                toggleWatchedStatsBtn.classList.add('bg-secondary', 'text-gray-400');
-                toggleWatchedStatsBtn.classList.remove('bg-red-800', 'text-white');
-            }
-
-            document.getElementById('dashboardStatLabel1').textContent = label1;
-            document.getElementById('dashboardStatValue1').textContent = listToDisplay.length;
-            document.getElementById('dashboardStatLabel2').textContent = label2;
-            document.getElementById('dashboardStatValue2').textContent = value2.avg.toFixed(1);
-            document.getElementById('dashboardStatLabel3').textContent = label3;
-            document.getElementById('dashboardStatValue3').textContent = label3 === 'Avg. Popularity' ? Math.round(value3.avg) : value3.avg.toFixed(1);
-        };
-        
-        const updateAllTimeStats = () => {
-            document.getElementById('statTotalWatches').textContent = watchLog.length;
-            const allTimeAvgRating = calculateAverage(watchedListData, 'vote_average', true);
-            const allTimeAvgPop = calculateAverage(watchedListData, 'popularity');
-            document.getElementById('statAllTimeAvgRating').textContent = allTimeAvgRating.avg.toFixed(1);
-            document.getElementById('statAllTimeAvgPop').textContent = Math.round(allTimeAvgPop.avg);
-        };
-
-        const updateDashboardStatus = () => {
-            const currentYear = new Date().getFullYear();
-            const goal = 31;
-            let goalCompletedThisYear = JSON.parse(localStorage.getItem('goalCompleted' + currentYear)) || false;
-            const watchedThisYearCount = watchLog.filter(log => log.year === currentYear).length;
-            const percentage = (watchedThisYearCount / goal) * 100;
-            if (watchedThisYearCount >= goal && !goalCompletedThisYear) {
-                goalModal.style.display = 'block';
-                localStorage.setItem('goalCompleted' + currentYear, JSON.stringify(true));
-            }
-            progressBar.style.width = `${Math.min(percentage, 100)}%`;
-            if (percentage >= 100) {
-                progressBar.classList.add('overdrive');
-                progressText.textContent = `Goal Met! You're at ${Math.round(percentage)}% of your goal!`;
-            } else {
-                progressBar.classList.remove('overdrive');
-                progressText.textContent = `${watchedThisYearCount} / ${goal} Movies Watched This Year`;
-            }
-        };
-
-        const updateNewBloodChallenge = () => {
-            const uniqueMovies = new Set(watchLog.map(log => log.movieId));
-            const count = uniqueMovies.size;
-            const goal = 10;
-            newBloodText.textContent = `${Math.min(count, goal)} / ${goal} First-Time Watches`;
-            newBloodTracker.innerHTML = '';
-            for (let i = 1; i <= goal; i++) {
-                const icon = document.createElement('i');
-                icon.className = 'fas fa-vial';
-                icon.classList.toggle('text-red-600', i <= count);
-                icon.classList.toggle('text-gray-700', i > count);
-                newBloodTracker.appendChild(icon);
-            }
-        };
-        
-        const setupSkullRating = async (movieId, modal) => {
-            const skulls = modal.querySelectorAll('.skull-rating .fa-skull');
-            const { data } = await _supabase.from('movies').select('personal_rating').eq('id', movieId).single();
-            const currentRating = data ? data.personal_rating : 0;
-            
-            const updateSkulls = (rating) => {
-                skulls.forEach(skull => {
-                    skull.classList.toggle('rated', parseInt(skull.dataset.value) <= rating);
-                });
-            };
-            skulls.forEach(skull => {
-                skull.onmouseover = () => {
-                    const rating = parseInt(skull.dataset.value);
-                    skulls.forEach(s => s.classList.toggle('hover-rated', parseInt(s.dataset.value) <= rating));
-                };
-                skull.onmouseout = () => skulls.forEach(s => s.classList.remove('hover-rated'));
-                skull.onclick = async () => {
-                    const newRating = parseInt(skull.dataset.value);
-                    await _supabase.from('movies').update({ personal_rating: newRating }).eq('id', movieId);
-                    updateSkulls(newRating);
-                    loadInitialData(); // Re-fetch to update averages
-                };
-            });
-            updateSkulls(currentRating);
-        };
-        
-        const getPersonalRatingHTML = (rating) => {
-            if (!rating) return '';
-            let skulls = '';
-            for (let i = 1; i <= 10; i++) {
-                skulls += `<i class="fas fa-skull text-xs ${i <= rating ? 'text-amber-500' : 'text-gray-600'}"></i>`;
-            }
-            return `<div class="mt-1">${skulls}</div>`;
-        };
-
-        const displayMovies = (movies, container, listType) => {
-            container.innerHTML = '';
-            if (movies.length === 0) {
-                if (container === searchResults) container.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The shadows hide your query... Nothing was found.</p>';
-                return;
-            }
-            movies.forEach(movie => {
-                const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
-                const movieElement = document.createElement('div');
-                movieElement.className = 'movie-card rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 bg-secondary';
-                let buttons = '';
-                if (listType === 'watch') buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow" onclick="markAsWatched(${movie.id})">Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id})">Remove</button>`;
-                else if (listType === 'watched') buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatched(${movie.id})">Remove</button>`;
-                else { const isMovieInWatchList = watchListData.some(m => m.id === movie.id); buttons = `<div class="space-y-2"><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow ${isMovieInWatchList ? 'opacity-50 cursor-not-allowed' : ''}" onclick="addToWatchList('${movieString}')" ${isMovieInWatchList ? 'disabled' : ''}><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-check mr-2"></i> Mark as Watched</button></div>${isMovieInWatchList ? '<p class="text-center text-blue-400 mt-2">In Watch List</p>' : ''}${watchedListData.some(m => m.id === movie.id) ? '<p class="text-center text-green-400 mt-2">Already Watched</p>' : ''}`; }
-                const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
-                movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" onclick="openDetailModal('${movieString}')"><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.personal_rating) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
-                container.appendChild(movieElement);
-            });
-        };
-        
-        const renderRewatchStats = () => {
-            rewatchStatsContainer.innerHTML = '';
-            if (watchedListData.length === 0) { rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No souls claimed yet...</p>'; return; }
-            const watchCounts = watchLog.reduce((acc, log) => { acc[log.movieId] = (acc[log.movieId] || 0) + 1; return acc; }, {});
-            let sortedMovies;
-            if (currentRewatchSort === 'watches') sortedMovies = [...watchedListData].sort((a, b) => (watchCounts[b.id] || 0) - (watchCounts[a.id] || 0));
-            else sortedMovies = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
-            sortedMovies.forEach(movie => {
-                const count = watchCounts[movie.id] || 0;
-                if(count === 0) return;
-                const statEl = document.createElement('div');
-                statEl.className = 'flex items-center border border-gray-800 p-3 rounded-lg bg-secondary';
-                statEl.innerHTML = `<img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/80x120/991b1b/white?text=N/A'}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p></div>`;
-                rewatchStatsContainer.appendChild(statEl);
-            });
-        };
-        
-        const renderYearlyBreakdown = () => {
-            const yearlyButtonsContainer = document.getElementById('yearlyButtonsContainer');
-            const yearlyMoviesContainer = document.getElementById('yearlyMoviesContainer');
-            yearlyButtonsContainer.innerHTML = '';
-            yearlyMoviesContainer.innerHTML = '';
-            
-            const years = [...new Set(watchLog.map(log => new Date(log.watched_at).getFullYear()))].sort((a, b) => b - a);
-            if (years.length === 0) return;
-
-            years.forEach(year => {
-                const button = document.createElement('button');
-                button.textContent = year;
-                button.className = 'px-3 py-1 bg-secondary rounded-md text-gray-400 hover:bg-red-800 hover:text-white transition-colors';
-                button.dataset.year = year;
-                yearlyButtonsContainer.appendChild(button);
-            });
-
-            const displayMoviesForYear = (year) => {
-                yearlyMoviesContainer.innerHTML = '';
-                const movieIdsForYear = new Set(watchLog.filter(log => new Date(log.watched_at).getFullYear() == year).map(log => log.movie_id));
-                const moviesForYear = [...movieIdsForYear].map(id => watchedListData.find(movie => movie.id === id)).filter(Boolean);
-
-                if (moviesForYear.length === 0) { yearlyMoviesContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">No movies logged for this year.</p>'; return; }
-
-                moviesForYear.forEach(movie => {
-                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
-                    const movieEl = document.createElement('div');
-                    movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg';
-                    movieEl.innerHTML = `
-                        <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mr-4 object-cover">
-                        <div class="flex-grow">
-                            <h4 class="font-bold text-red-600">${movie.title}</h4>
-                            <p class="text-sm text-gray-400">${movie.director || 'Unknown Director'}</p>
-                        </div>
-                        <div class="text-right">
-                            ${getPersonalRatingHTML(movie.personal_rating)}
-                        </div>
-                    `;
-                    yearlyMoviesContainer.appendChild(movieEl);
-                });
-            };
-
-            yearlyButtonsContainer.addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON') {
-                    const year = e.target.dataset.year;
-                    yearlyButtonsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('bg-red-800', 'text-white'));
-                    e.target.classList.add('bg-red-800', 'text-white');
-                    displayMoviesForYear(year);
-                }
-            });
-
-            if (yearlyButtonsContainer.firstChild) yearlyButtonsContainer.firstChild.click();
-        };
-
-        const renderAdvancedCharts = async () => {
-            const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'];
-            if (directorsChartInstance) directorsChartInstance.destroy();
-            if (genresChartInstance) genresChartInstance.destroy();
-
-            const { data } = await _supabase.from('movies').select('director, release_date').not('director', 'is', null);
-            
-            const directorCounts = data.reduce((acc, movie) => { acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
-            const sortedDirectors = Object.entries(directorCounts).sort(([,a],[,b]) => b-a).slice(0, 10);
-            directorsChartInstance = new Chart(document.getElementById('directorsChart'), { type: 'bar', data: { labels: sortedDirectors.map(d => d[0]), datasets: [{ label: '# of Movies Watched', data: sortedDirectors.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: '#a1a1aa' }}, y: { ticks: { color: '#a1a1aa' }} }, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
-            
-            const decadeCounts = data.reduce((acc, movie) => {
-                if (movie.release_date) {
-                    const year = parseInt(movie.release_date.substring(0, 4));
-                    const decade = Math.floor(year / 10) * 10;
-                    const decadeLabel = `${decade}s`;
-                    acc[decadeLabel] = (acc[decadeLabel] || 0) + 1;
-                }
-                return acc;
-            }, {});
-            const sortedDecades = Object.entries(decadeCounts).sort((a,b) => b[1] - a[1]);
-            
-            genresChartInstance = new Chart(document.getElementById('genresChart'), { type: 'pie', data: { labels: sortedDecades.map(d => d[0]), datasets: [{ data: sortedDecades.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
-        };
-        
-        async function loadInitialData() {
-            const { data: moviesData, error: moviesError } = await _supabase.from('movies').select('*');
-            if (moviesError) { console.error(moviesError); return; }
-            
-            const { data: watchLogData, error: logError } = await _supabase.from('watch_log').select('*');
-            if (logError) { console.error(logError); return; }
-
-            const { data: watchlistData, error: watchlistError } = await _supabase.from('watchlist').select('movie_id');
-            if (watchlistError) { console.error(watchlistError); return; }
-
-            watchedListData = moviesData.filter(movie => watchLogData.some(log => log.movie_id === movie.id));
-            const watchlistIds = new Set(watchlistData.map(item => item.movie_id));
-            watchListData = moviesData.filter(movie => watchlistIds.has(movie.id));
-            watchLog = watchLogData;
-            
-            renderLists();
-        }
-
-        const renderLists = () => {
-            const sortedWatchlist = [...watchListData].sort((a, b) => a.title.localeCompare(b.title));
-            displayMovies(sortedWatchlist, watchListContainer, 'watch');
-            let sortedWatchedlist;
-            if (currentWatchedlistSort === 'recent') {
-                const watchedIdsOrder = watchLog.map(l => l.movie_id).reverse();
-                sortedWatchedlist = [...new Set(watchedIdsOrder)].map(id => watchedListData.find(m => m.id === id)).filter(Boolean);
-            }
-            else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
-            displayMovies(sortedWatchedlist, watchedListContainer, 'watched');
-            renderRewatchStats();
-            renderYearlyBreakdown();
-            if (watchListData.length === 0) watchListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The Viewing Room is empty. Summon some victims...</p>';
-            if (watchedListData.length === 0) watchedListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">Your body count is zero. Time to get to work.</p>';
-            updateDashboardStatus(); renderDashboardStats(); updateAllTimeStats(); renderAdvancedCharts(); updateNewBloodChallenge();
-        };
-
-        // List Management
-        const addToWatchList = async (movieString) => {
-            const movie = JSON.parse(decodeURIComponent(movieString));
-            // Add to movies table first to ensure it exists
-            await _supabase.from('movies').upsert({ id: movie.id, ...movie }, { onConflict: 'id' });
-            // Then add to watchlist
-            await _supabase.from('watchlist').insert({ movie_id: movie.id });
-            loadInitialData();
-            showModal(movie.title, 'addWatchlist');
-        };
-        const addToWatchedList = async (movieString) => {
-            const movie = JSON.parse(decodeURIComponent(movieString));
-            const fullDetails = await fetchMovieById(movie.id);
-            await _supabase.from('movies').upsert({ id: movie.id, director: fullDetails.director, ...movie }, { onConflict: 'id' });
-            await _supabase.from('watch_log').insert({ movie_id: movie.id });
-            await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
-            loadInitialData();
-            openRatingModal(movie);
-        };
-        const markAsWatched = async (movieId) => {
-            const movie = watchListData.find(m => m.id === movieId);
-            await _supabase.from('watch_log').insert({ movie_id: movieId });
-            await _supabase.from('watchlist').delete().eq('movie_id', movieId);
-            loadInitialData();
-            openRatingModal(movie);
-        };
-        const removeFromWatchlist = async (movieId) => {
-             const movie = watchListData.find(m => m.id === movieId);
-            await _supabase.from('watchlist').delete().eq('movie_id', movieId);
-            loadInitialData();
-            showModal(movie.title, 'removedWatchlist');
-        };
-        const removeFromWatched = async (movieId) => {
-            const movie = watchedListData.find(m => m.id === movieId);
-            await _supabase.from('watch_log').delete().eq('movie_id', movieId);
-             await _supabase.from('movies').update({ personal_rating: null }).eq('id', movieId);
-            loadInitialData();
-            showModal(movie.title, 'removedWatched');
-        };
-        
-        // Live Search
-        const displayLiveResults = movies => {
-            liveSearchResults.innerHTML = '';
-            if (movies.length === 0) { liveSearchResults.classList.add('hidden'); return; }
-            movies.forEach(movie => {
-                const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
-                const resultEl = document.createElement('div');
-                resultEl.className = 'p-2 hover:bg-gray-700 flex items-center space-x-3';
-                resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" onclick="openDetailModal('${movieString}')"><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" onclick="addToWatchList('${movieString}')" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
-                liveSearchResults.appendChild(resultEl);
-            });
-            const seeMoreEl = document.createElement('button');
-            seeMoreEl.className = 'w-full text-center p-2 bg-red-800 hover:bg-red-900 font-bold text-sm btn-glow';
-            seeMoreEl.textContent = 'See More Results...';
-            seeMoreEl.onclick = () => searchMovies(searchInput.value.trim());
-            liveSearchResults.appendChild(seeMoreEl);
-            liveSearchResults.classList.remove('hidden');
-        };
-
-        const debounce = (func, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); }; };
-        const handleLiveSearch = debounce(async (query) => {
-            if (query.trim().length < 2) { liveSearchResults.classList.add('hidden'); return; }
-            const { movies } = await fetchHorrorMovies(query);
-            if (movies) displayLiveResults(movies.slice(0, 10));
-        }, 300);
-        
-        async function searchMovies(query) {
-            liveSearchResults.classList.add('hidden');
-            searchResults.innerHTML = '';
-            const { movies, error } = await fetchHorrorMovies(query);
-            if (error) searchResults.innerHTML = `<p class="text-yellow-400 col-span-full text-center">${error}</p>`;
-            else displayMovies(movies, searchResults, 'search');
-        }
-
-        // --- EVENT LISTENERS ---
-        window.addEventListener('click', e => { 
-            if (e.target == messageModal) closeMessageModal(); 
-            if (e.target == movieDetailModal) closeDetailModal(); 
-            if (e.target == goalModal) closeGoalModal(); 
-            if (e.target == ratingModal) closeRatingModal();
-            if (!e.target.closest('.sort-dropdown')) {
-                document.querySelectorAll('.sort-menu').forEach(menu => menu.classList.add('hidden'));
-            }
-        });
-
-        document.addEventListener('click', e => { if (!searchContainer.contains(e.target)) liveSearchResults.classList.add('hidden'); });
-        
-        tabs.forEach(tab => tab.addEventListener('click', () => {
-            const target = tab.getAttribute('data-tab');
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            tabContents.forEach(c => c.classList.toggle('active', c.id === target));
-        }));
-        
-        sortDropdowns.forEach(dropdown => {
-            const btn = dropdown.querySelector('.sort-btn');
-            const menu = dropdown.querySelector('.sort-menu');
-            const label = dropdown.querySelector('.sort-label');
-            btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
-            menu.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (e.target.tagName === 'A') {
-                    const sortValue = e.target.dataset.sort;
-                    label.textContent = e.target.textContent;
-                    switch (dropdown.id) {
-                        case 'sortWatchlist': currentWatchlistSort = sortValue; break;
-                        case 'sortWatchedlist': currentWatchedlistSort = sortValue; break;
-                        case 'sortRewatch': currentRewatchSort = sortValue; break;
-                    }
-                    renderLists();
-                    menu.classList.add('hidden');
-                }
-            });
-        });
-
-        searchInput.addEventListener('input', e => handleLiveSearch(e.target.value));
-        searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMovies(searchInput.value.trim()); });
-        searchButton.addEventListener('click', () => searchMovies(searchInput.value.trim()));
-        
-        surpriseBtn.addEventListener('click', () => {
-            if (watchListData.length === 0) { showModal("The Box is empty! Add movies to your watchlist to summon a surprise."); return; }
-            const randomIndex = Math.floor(Math.random() * watchListData.length);
-            const surpriseMovie = watchListData[randomIndex];
-            const movieString = encodeURIComponent(JSON.stringify(surpriseMovie));
-            openDetailModal(movieString);
-        });
-        
-        toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
-        toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
-
         document.addEventListener('DOMContentLoaded', () => {
+            // #####################################################################
+            // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
+            // #  (Make sure they are inside the single quotes '')                 #
+            // #####################################################################
+            const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
+            // #####################################################################
+            
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // DOM Elements
+            const loader = document.getElementById('loader');
+            const surpriseBtn = document.getElementById('surpriseBtn');
+            const searchContainer = document.getElementById('searchContainer');
+            const searchButton = document.getElementById('searchButton');
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+            const liveSearchResults = document.getElementById('liveSearchResults');
+            const watchListContainer = document.getElementById('watchList');
+            const watchedListContainer = document.getElementById('watchedList');
+            const rewatchStatsContainer = document.getElementById('rewatchStatsContainer');
+            const messageModal = document.getElementById('messageModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalIcon = document.getElementById('modalIcon');
+            const movieDetailModal = document.getElementById('movieDetailModal');
+            const ratingModal = document.getElementById('ratingModal');
+            const goalModal = document.getElementById('goalModal');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const tabs = document.querySelectorAll('.tab-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const sortDropdowns = document.querySelectorAll('.sort-dropdown');
+            const toggleWatchedStatsBtn = document.getElementById('toggleWatchedStatsBtn');
+            const toggleWatchlistStatsBtn = document.getElementById('toggleWatchlistStatsBtn');
+            const newBloodTracker = document.getElementById('newBloodTracker');
+            const newBloodText = document.getElementById('newBloodText');
+            
+            // Chart instances
+            let directorsChartInstance, genresChartInstance;
+
+            // TMDB Config
+            const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
+            const HORROR_GENRE_ID = 27;
+            
+            // App State (will be populated from Supabase)
+            let watchListData = [];
+            let watchedListData = [];
+            let watchLog = [];
+            let currentWatchlistSort = 'title-asc';
+            let currentWatchedlistSort = 'recent';
+            let currentRewatchSort = 'watches';
+            let dashboardStatView = 'watched';
+            
+            // Utility Functions
+            const formatCurrency = (amount) => {
+                if (!amount) return "N/A";
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1
+                }).format(amount);
+            };
+            const getRatingColor = rating => { if (rating >= 7.6) return 'text-red-600'; if (rating >= 5.1) return 'text-green-400'; if (rating >= 2.6) return 'text-yellow-400'; return 'text-blue-400'; };
+            const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
+            
+            const calculateAverage = (movieList, key, usePersonalRating = false) => {
+                if (movieList.length === 0) return { avg: 0 };
+                let ratedMovies = movieList;
+                if (usePersonalRating) {
+                    ratedMovies = movieList.filter(movie => movie.personal_rating);
+                    if (ratedMovies.length === 0) return { avg: 0 };
+                }
+                const total = ratedMovies.reduce((acc, movie) => {
+                    if (usePersonalRating) return acc + parseInt(movie.personal_rating || 0);
+                    return acc + (movie[key] || 0);
+                }, 0);
+                const avg = total / ratedMovies.length;
+                return { avg };
+            };
+
+            // Modal Functions
+            const showModal = (title, type = 'info') => {
+                let message = '', iconHtml = '';
+                switch (type) {
+                    case 'addWatchlist': message = `'${title}' has been summoned.`; iconHtml = '<i class="fas fa-eye text-blue-400"></i>'; break;
+                    case 'alreadyExists': message = `'${title}' already haunts your lists.`; iconHtml = '<i class="fas fa-ghost text-yellow-400"></i>'; break;
+                    case 'removedWatchlist': message = `'${title}' has vanished.`; iconHtml = '<i class="fas fa-eye-slash text-gray-500"></i>'; break;
+                    case 'removedWatched': message = `'${title}' has been exorcised.`; iconHtml = '<i class="fas fa-ban text-red-500"></i>'; break;
+                    default: message = title; iconHtml = '<i class="fas fa-info-circle text-gray-400"></i>';
+                }
+                modalMessage.textContent = message;
+                modalIcon.innerHTML = iconHtml;
+                messageModal.style.display = 'block';
+            };
+
+            const closeMessageModal = () => messageModal.style.display = 'none';
+            const closeGoalModal = () => goalModal.style.display = 'none';
+            const closeRatingModal = () => ratingModal.style.display = 'none';
+
+            const openRatingModal = (movie) => {
+                document.getElementById('ratingModalTitle').textContent = movie.title;
+                const skullContainer = ratingModal.querySelector('.skull-rating');
+                skullContainer.innerHTML = '';
+                for(let i = 1; i <= 10; i++) {
+                    const skull = document.createElement('i');
+                    skull.className = 'fas fa-skull p-1';
+                    skull.dataset.value = i;
+                    skullContainer.appendChild(skull);
+                }
+                setupSkullRating(movie.id, ratingModal);
+                ratingModal.style.display = 'block';
+            };
+
+            const openDetailModal = async (movieString) => {
+                const movie = JSON.parse(decodeURIComponent(movieString));
+                const modalContent = movieDetailModal.querySelector('.modal-content');
+                const modalTitle = document.getElementById('modalTitle');
+                const poster = document.getElementById('modalPoster');
+                
+                poster.src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+                poster.onload = () => {
+                    try {
+                        const colorThief = new ColorThief();
+                        const dominantColor = colorThief.getColor(poster);
+                        const color = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+                        modalContent.style.borderColor = color;
+                        modalTitle.style.color = color;
+                    } catch(e) { console.error("ColorThief Error:", e); modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; }
+                };
+                poster.onerror = () => { modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; };
+
+                modalTitle.textContent = movie.title;
+                document.getElementById('modalYearAndDirector').textContent = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
+                document.getElementById('modalRating').textContent = movie.vote_average.toFixed(1);
+                document.getElementById('modalPopularity').textContent = Math.round(movie.popularity);
+                document.getElementById('modalRatingContainer').className = 'text-2xl font-bold ' + getRatingColor(movie.vote_average);
+                document.getElementById('modalPopularityContainer').className = 'text-2xl font-bold ' + getPopularityColor(movie.popularity);
+                document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
+                document.getElementById('tmdbLink').href = `https://www.themoviedb.org/movie/${movie.id}`;
+                const movieStringForEvent = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                
+                const isMovieInWatchedList = watchedListData.some(m => m.id === movie.id);
+                document.getElementById('personalRatingSection').style.display = isMovieInWatchedList ? 'block' : 'none';
+                if (isMovieInWatchedList) setupSkullRating(movie.id, movieDetailModal);
+
+                const modalButtons = document.getElementById('modalButtons');
+                const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
+                let buttons = '';
+                if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
+                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
+                else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
+                modalButtons.innerHTML = buttons;
+
+                const modalBudget = document.getElementById('modalBudget');
+                const modalRevenue = document.getElementById('modalRevenue');
+                const modalProfit = document.getElementById('modalProfit');
+                const modalProfitContainer = document.getElementById('modalProfitContainer');
+                modalBudget.textContent = '...'; modalRevenue.textContent = '...'; modalProfit.textContent = '...';
+                modalProfitContainer.classList.remove('text-red-500', 'text-green-400');
+                movieDetailModal.style.display = 'block';
+
+                const fullDetails = await fetchMovieById(movie.id);
+                if (fullDetails) {
+                     document.getElementById('modalYearAndDirector').textContent = `${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'} · ${fullDetails.director || 'Unknown'}`;
+                    if (fullDetails.budget > 0 || fullDetails.revenue > 0) {
+                        const profit = fullDetails.revenue - fullDetails.budget;
+                        modalBudget.textContent = formatCurrency(fullDetails.budget);
+                        modalRevenue.textContent = formatCurrency(fullDetails.revenue);
+                        modalProfit.textContent = formatCurrency(profit);
+                        if (profit >= 0) modalProfitContainer.classList.add('text-green-400');
+                        else modalProfitContainer.classList.add('text-red-500');
+                    } else {
+                        modalBudget.textContent = 'N/A'; modalRevenue.textContent = 'N/A'; modalProfit.textContent = 'N/A';
+                    }
+                }
+            };
+
+            const closeDetailModal = () => {
+                 movieDetailModal.style.display = 'none';
+                 const modalContent = movieDetailModal.querySelector('.modal-content');
+                 const modalTitle = document.getElementById('modalTitle');
+                 modalContent.style.borderColor = '#4b5563';
+                 modalTitle.style.color = '#ef4444';
+            };
+
+            // API Fetching
+            const fetchHorrorMovies = async query => {
+                searchResults.innerHTML = '';
+                loader.style.display = 'block';
+                if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return { error: 'Please enter your TMDB API key.' };
+                try {
+                    const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    loader.style.display = 'none';
+                    return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
+                } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
+            };
+            const fetchMovieById = async movieId => {
+                if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return null;
+                try {
+                    const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits`);
+                    if (!response.ok) return null;
+                    const data = await response.json();
+                    const director = data.credits.crew.find(person => person.job === 'Director');
+                    data.director = director ? director.name : 'Unknown';
+                    return data;
+                } catch (error) { console.error(`Error fetching movie ${movieId}:`, error); return null; }
+            };
+
+            // Main App Logic & Rendering
+            const renderDashboardStats = () => {
+                const currentYear = new Date().getFullYear();
+                const watchedThisYearLogs = watchLog.filter(log => new Date(log.watched_at).getFullYear() === currentYear);
+                const watchedThisYearMovies = watchedThisYearLogs.map(log => watchedListData.find(m => m.id === log.movie_id)).filter(Boolean);
+                let listToDisplay, label1, label2, label3, value2, value3;
+                
+                if (dashboardStatView === 'watched') {
+                    listToDisplay = watchedThisYearMovies;
+                    label1 = 'Watched'; label2 = 'My Avg. Rating'; label3 = 'TMDb Avg. Rating';
+                    value2 = calculateAverage(listToDisplay, 'vote_average', true);
+                    value3 = calculateAverage(listToDisplay, 'vote_average');
+                    toggleWatchedStatsBtn.classList.add('bg-red-800', 'text-white');
+                    toggleWatchedStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
+                    toggleWatchlistStatsBtn.classList.add('bg-secondary', 'text-gray-400');
+                    toggleWatchlistStatsBtn.classList.remove('bg-red-800', 'text-white');
+                } else { // 'watchlist'
+                    listToDisplay = watchListData;
+                    label1 = 'In Watchlist'; label2 = 'TMDb Avg. Rating'; label3 = 'Avg. Popularity';
+                    value2 = calculateAverage(listToDisplay, 'vote_average');
+                    value3 = calculateAverage(listToDisplay, 'popularity');
+                    toggleWatchlistStatsBtn.classList.add('bg-red-800', 'text-white');
+                    toggleWatchlistStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
+                    toggleWatchedStatsBtn.classList.add('bg-secondary', 'text-gray-400');
+                    toggleWatchedStatsBtn.classList.remove('bg-red-800', 'text-white');
+                }
+
+                document.getElementById('dashboardStatLabel1').textContent = label1;
+                document.getElementById('dashboardStatValue1').textContent = listToDisplay.length;
+                document.getElementById('dashboardStatLabel2').textContent = label2;
+                document.getElementById('dashboardStatValue2').textContent = value2.avg.toFixed(1);
+                document.getElementById('dashboardStatLabel3').textContent = label3;
+                document.getElementById('dashboardStatValue3').textContent = label3 === 'Avg. Popularity' ? Math.round(value3.avg) : value3.avg.toFixed(1);
+            };
+            
+            const updateAllTimeStats = () => {
+                document.getElementById('statTotalWatches').textContent = watchLog.length;
+                const allTimeAvgRating = calculateAverage(watchedListData, 'vote_average', true);
+                const allTimeAvgPop = calculateAverage(watchedListData, 'popularity');
+                document.getElementById('statAllTimeAvgRating').textContent = allTimeAvgRating.avg.toFixed(1);
+                document.getElementById('statAllTimeAvgPop').textContent = Math.round(allTimeAvgPop.avg);
+            };
+
+            const updateDashboardStatus = () => {
+                const currentYear = new Date().getFullYear();
+                const goal = 31;
+                let goalCompletedThisYear = JSON.parse(localStorage.getItem('goalCompleted' + currentYear)) || false;
+                const watchedThisYearCount = watchLog.filter(log => new Date(log.watched_at).getFullYear() === currentYear).length;
+                const percentage = (watchedThisYearCount / goal) * 100;
+                if (watchedThisYearCount >= goal && !goalCompletedThisYear) {
+                    goalModal.style.display = 'block';
+                    localStorage.setItem('goalCompleted' + currentYear, JSON.stringify(true));
+                }
+                progressBar.style.width = `${Math.min(percentage, 100)}%`;
+                if (percentage >= 100) {
+                    progressBar.classList.add('overdrive');
+                    progressText.textContent = `Goal Met! You're at ${Math.round(percentage)}% of your goal!`;
+                } else {
+                    progressBar.classList.remove('overdrive');
+                    progressText.textContent = `${watchedThisYearCount} / ${goal} Movies Watched This Year`;
+                }
+            };
+
+            const updateNewBloodChallenge = () => {
+                const uniqueMovies = new Set(watchLog.map(log => log.movie_id));
+                const count = uniqueMovies.size;
+                const goal = 10;
+                newBloodText.textContent = `${Math.min(count, goal)} / ${goal} First-Time Watches`;
+                newBloodTracker.innerHTML = '';
+                for (let i = 1; i <= goal; i++) {
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-vial';
+                    icon.classList.toggle('text-red-600', i <= count);
+                    icon.classList.toggle('text-gray-700', i > count);
+                    newBloodTracker.appendChild(icon);
+                }
+            };
+            
+            const setupSkullRating = async (movieId, modal) => {
+                const skulls = modal.querySelectorAll('.skull-rating .fa-skull');
+                const { data } = await _supabase.from('movies').select('personal_rating').eq('id', movieId).single();
+                const currentRating = data ? data.personal_rating : 0;
+                
+                const updateSkulls = (rating) => {
+                    skulls.forEach(skull => {
+                        skull.classList.toggle('rated', parseInt(skull.dataset.value) <= rating);
+                    });
+                };
+                skulls.forEach(skull => {
+                    skull.onmouseover = () => {
+                        const rating = parseInt(skull.dataset.value);
+                        skulls.forEach(s => s.classList.toggle('hover-rated', parseInt(s.dataset.value) <= rating));
+                    };
+                    skull.onmouseout = () => skulls.forEach(s => s.classList.remove('hover-rated'));
+                    skull.onclick = async () => {
+                        const newRating = parseInt(skull.dataset.value);
+                        await _supabase.from('movies').update({ personal_rating: newRating }).eq('id', movieId);
+                        updateSkulls(newRating);
+                        loadInitialData(); // Re-fetch to update averages
+                    };
+                });
+                updateSkulls(currentRating);
+            };
+            
+            const getPersonalRatingHTML = (rating) => {
+                if (!rating) return '';
+                let skulls = '';
+                for (let i = 1; i <= 10; i++) {
+                    skulls += `<i class="fas fa-skull text-xs ${i <= rating ? 'text-amber-500' : 'text-gray-600'}"></i>`;
+                }
+                return `<div class="mt-1">${skulls}</div>`;
+            };
+
+            const displayMovies = (movies, container, listType) => {
+                container.innerHTML = '';
+                if (movies.length === 0) {
+                    if (container === searchResults) container.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The shadows hide your query... Nothing was found.</p>';
+                    return;
+                }
+                movies.forEach(movie => {
+                    const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                    const movieElement = document.createElement('div');
+                    movieElement.className = 'movie-card rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 bg-secondary';
+                    let buttons = '';
+                    if (listType === 'watch') buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow" onclick="markAsWatched(${movie.id})">Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id})">Remove</button>`;
+                    else if (listType === 'watched') buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatched(${movie.id})">Remove</button>`;
+                    else { const isMovieInWatchList = watchListData.some(m => m.id === movie.id); buttons = `<div class="space-y-2"><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow ${isMovieInWatchList ? 'opacity-50 cursor-not-allowed' : ''}" onclick="addToWatchList('${movieString}')" ${isMovieInWatchList ? 'disabled' : ''}><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-check mr-2"></i> Mark as Watched</button></div>${isMovieInWatchList ? '<p class="text-center text-blue-400 mt-2">In Watch List</p>' : ''}${watchedListData.some(m => m.id === movie.id) ? '<p class="text-center text-green-400 mt-2">Already Watched</p>' : ''}`; }
+                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+                    movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" onclick="openDetailModal('${movieString}')"><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.personal_rating) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
+                    container.appendChild(movieElement);
+                });
+            };
+            
+            const renderRewatchStats = () => {
+                rewatchStatsContainer.innerHTML = '';
+                if (watchedListData.length === 0) { rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No souls claimed yet...</p>'; return; }
+                const watchCounts = watchLog.reduce((acc, log) => { acc[log.movie_id] = (acc[log.movie_id] || 0) + 1; return acc; }, {});
+                let sortedMovies;
+                if (currentRewatchSort === 'watches') sortedMovies = [...watchedListData].sort((a, b) => (watchCounts[b.id] || 0) - (watchCounts[a.id] || 0));
+                else sortedMovies = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
+                sortedMovies.forEach(movie => {
+                    const count = watchCounts[movie.id] || 0;
+                    if(count === 0) return;
+                    const statEl = document.createElement('div');
+                    statEl.className = 'flex items-center border border-gray-800 p-3 rounded-lg bg-secondary';
+                    statEl.innerHTML = `<img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/80x120/991b1b/white?text=N/A'}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p></div>`;
+                    rewatchStatsContainer.appendChild(statEl);
+                });
+            };
+            
+            const renderYearlyBreakdown = () => {
+                const yearlyButtonsContainer = document.getElementById('yearlyButtonsContainer');
+                const yearlyMoviesContainer = document.getElementById('yearlyMoviesContainer');
+                yearlyButtonsContainer.innerHTML = '';
+                yearlyMoviesContainer.innerHTML = '';
+                
+                const years = [...new Set(watchLog.map(log => new Date(log.watched_at).getFullYear()))].sort((a, b) => b - a);
+                if (years.length === 0) return;
+
+                years.forEach(year => {
+                    const button = document.createElement('button');
+                    button.textContent = year;
+                    button.className = 'px-3 py-1 bg-secondary rounded-md text-gray-400 hover:bg-red-800 hover:text-white transition-colors';
+                    button.dataset.year = year;
+                    yearlyButtonsContainer.appendChild(button);
+                });
+
+                const displayMoviesForYear = (year) => {
+                    yearlyMoviesContainer.innerHTML = '';
+                    const movieIdsForYear = new Set(watchLog.filter(log => new Date(log.watched_at).getFullYear() == year).map(log => log.movie_id));
+                    const moviesForYear = [...movieIdsForYear].map(id => watchedListData.find(movie => movie.id === id)).filter(Boolean);
+
+                    if (moviesForYear.length === 0) { yearlyMoviesContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">No movies logged for this year.</p>'; return; }
+
+                    moviesForYear.forEach(movie => {
+                        const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
+                        const movieEl = document.createElement('div');
+                        movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg';
+                        movieEl.innerHTML = `
+                            <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mr-4 object-cover">
+                            <div class="flex-grow">
+                                <h4 class="font-bold text-red-600">${movie.title}</h4>
+                                <p class="text-sm text-gray-400">${movie.director || 'Unknown Director'}</p>
+                            </div>
+                            <div class="text-right">
+                                ${getPersonalRatingHTML(movie.personal_rating)}
+                            </div>
+                        `;
+                        yearlyMoviesContainer.appendChild(movieEl);
+                    });
+                };
+
+                yearlyButtonsContainer.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        const year = e.target.dataset.year;
+                        yearlyButtonsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('bg-red-800', 'text-white'));
+                        e.target.classList.add('bg-red-800', 'text-white');
+                        displayMoviesForYear(year);
+                    }
+                });
+
+                if (yearlyButtonsContainer.firstChild) yearlyButtonsContainer.firstChild.click();
+            };
+
+            const renderAdvancedCharts = async () => {
+                const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'];
+                if (directorsChartInstance) directorsChartInstance.destroy();
+                if (genresChartInstance) genresChartInstance.destroy();
+
+                const { data } = await _supabase.from('movies').select('director, release_date').not('director', 'is', null);
+                
+                const directorCounts = data.reduce((acc, movie) => { acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
+                const sortedDirectors = Object.entries(directorCounts).sort(([,a],[,b]) => b-a).slice(0, 10);
+                directorsChartInstance = new Chart(document.getElementById('directorsChart'), { type: 'bar', data: { labels: sortedDirectors.map(d => d[0]), datasets: [{ label: '# of Movies Watched', data: sortedDirectors.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: '#a1a1aa' }}, y: { ticks: { color: '#a1a1aa' }} }, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
+                
+                const decadeCounts = data.reduce((acc, movie) => {
+                    if (movie.release_date) {
+                        const year = parseInt(movie.release_date.substring(0, 4));
+                        const decade = Math.floor(year / 10) * 10;
+                        const decadeLabel = `${decade}s`;
+                        acc[decadeLabel] = (acc[decadeLabel] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                const sortedDecades = Object.entries(decadeCounts).sort((a,b) => b[1] - a[1]);
+                
+                genresChartInstance = new Chart(document.getElementById('genresChart'), { type: 'pie', data: { labels: sortedDecades.map(d => d[0]), datasets: [{ data: sortedDecades.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
+            };
+            
+            async function loadInitialData() {
+                const { data: moviesData, error: moviesError } = await _supabase.from('movies').select('*');
+                if (moviesError) { console.error(moviesError); return; }
+                
+                const { data: watchLogData, error: logError } = await _supabase.from('watch_log').select('*');
+                if (logError) { console.error(logError); return; }
+
+                const { data: watchlistData, error: watchlistError } = await _supabase.from('watchlist').select('*, movies(*)');
+                if (watchlistError) { console.error(watchlistError); return; }
+
+                watchedListData = moviesData.filter(movie => watchLogData.some(log => log.movie_id === movie.id));
+                watchListData = watchlistData.map(item => item.movies);
+                watchLog = watchLogData.map(log => ({ ...log, year: new Date(log.watched_at).getFullYear() }));
+                
+                renderLists();
+            }
+
+            const renderLists = () => {
+                const sortedWatchlist = [...watchListData].sort((a, b) => a.title.localeCompare(b.title));
+                displayMovies(sortedWatchlist, watchListContainer, 'watch');
+                let sortedWatchedlist;
+                if (currentWatchedlistSort === 'recent') {
+                    const watchedIdsOrder = watchLog.sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at)).map(l => l.movie_id);
+                    sortedWatchedlist = [...new Set(watchedIdsOrder)].map(id => watchedListData.find(m => m.id === id)).filter(Boolean);
+                }
+                else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
+                displayMovies(sortedWatchedlist, watchedListContainer, 'watched');
+                renderRewatchStats();
+                renderYearlyBreakdown();
+                if (watchListData.length === 0) watchListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The Viewing Room is empty. Summon some victims...</p>';
+                if (watchedListData.length === 0) watchedListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">Your body count is zero. Time to get to work.</p>';
+                updateDashboardStatus(); renderDashboardStats(); updateAllTimeStats(); renderAdvancedCharts(); updateNewBloodChallenge();
+            };
+
+            // List Management
+            const addToWatchList = async (movieString) => {
+                const movie = JSON.parse(decodeURIComponent(movieString));
+                // Add to movies table first to ensure it exists
+                await _supabase.from('movies').upsert({ id: movie.id, ...movie }, { onConflict: 'id' });
+                // Then add to watchlist
+                await _supabase.from('watchlist').insert({ movie_id: movie.id });
+                loadInitialData();
+                showModal(movie.title, 'addWatchlist');
+            };
+            const addToWatchedList = async (movieString) => {
+                const movie = JSON.parse(decodeURIComponent(movieString));
+                const fullDetails = await fetchMovieById(movie.id);
+                await _supabase.from('movies').upsert({ id: movie.id, director: fullDetails.director, ...movie }, { onConflict: 'id' });
+                await _supabase.from('watch_log').insert({ movie_id: movie.id, watched_at: new Date().toISOString() });
+                await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
+                loadInitialData();
+                openRatingModal(movie);
+            };
+            const markAsWatched = async (movieId) => {
+                const movie = watchListData.find(m => m.id === movieId);
+                await _supabase.from('watch_log').insert({ movie_id: movieId, watched_at: new Date().toISOString() });
+                await _supabase.from('watchlist').delete().eq('movie_id', movieId);
+                loadInitialData();
+                openRatingModal(movie);
+            };
+            const removeFromWatchlist = async (movieId) => {
+                 const movie = watchListData.find(m => m.id === movieId);
+                await _supabase.from('watchlist').delete().eq('movie_id', movieId);
+                loadInitialData();
+                showModal(movie.title, 'removedWatchlist');
+            };
+            const removeFromWatched = async (movieId) => {
+                const movie = watchedListData.find(m => m.id === movieId);
+                await _supabase.from('watch_log').delete().eq('movie_id', movieId);
+                 await _supabase.from('movies').update({ personal_rating: null }).eq('id', movieId);
+                loadInitialData();
+                showModal(movie.title, 'removedWatched');
+            };
+            
+            // Live Search
+            const displayLiveResults = movies => {
+                liveSearchResults.innerHTML = '';
+                if (movies.length === 0) { liveSearchResults.classList.add('hidden'); return; }
+                movies.forEach(movie => {
+                    const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                    const resultEl = document.createElement('div');
+                    resultEl.className = 'p-2 hover:bg-gray-700 flex items-center space-x-3';
+                    resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" onclick="openDetailModal('${movieString}')"><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" onclick="addToWatchList('${movieString}')" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
+                    liveSearchResults.appendChild(resultEl);
+                });
+                const seeMoreEl = document.createElement('button');
+                seeMoreEl.className = 'w-full text-center p-2 bg-red-800 hover:bg-red-900 font-bold text-sm btn-glow';
+                seeMoreEl.textContent = 'See More Results...';
+                seeMoreEl.onclick = () => searchMovies(searchInput.value.trim());
+                liveSearchResults.appendChild(seeMoreEl);
+                liveSearchResults.classList.remove('hidden');
+            };
+
+            const debounce = (func, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); }; };
+            const handleLiveSearch = debounce(async (query) => {
+                if (query.trim().length < 2) { liveSearchResults.classList.add('hidden'); return; }
+                const { movies } = await fetchHorrorMovies(query);
+                if (movies) displayLiveResults(movies.slice(0, 10));
+            }, 300);
+            
+            async function searchMovies(query) {
+                liveSearchResults.classList.add('hidden');
+                searchResults.innerHTML = '';
+                const { movies, error } = await fetchHorrorMovies(query);
+                if (error) searchResults.innerHTML = `<p class="text-yellow-400 col-span-full text-center">${error}</p>`;
+                else displayMovies(movies, searchResults, 'search');
+            }
+
+            // --- EVENT LISTENERS ---
+            window.addEventListener('click', e => { 
+                if (e.target == messageModal) closeMessageModal(); 
+                if (e.target == movieDetailModal) closeDetailModal(); 
+                if (e.target == goalModal) closeGoalModal(); 
+                if (e.target == ratingModal) closeRatingModal();
+                if (!e.target.closest('.sort-dropdown')) {
+                    document.querySelectorAll('.sort-menu').forEach(menu => menu.classList.add('hidden'));
+                }
+            });
+
+            document.addEventListener('click', e => { if (!searchContainer.contains(e.target)) liveSearchResults.classList.add('hidden'); });
+            
+            tabs.forEach(tab => tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                tabContents.forEach(c => c.classList.toggle('active', c.id === target));
+            }));
+            
+            sortDropdowns.forEach(dropdown => {
+                const btn = dropdown.querySelector('.sort-btn');
+                const menu = dropdown.querySelector('.sort-menu');
+                const label = dropdown.querySelector('.sort-label');
+                btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+                menu.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (e.target.tagName === 'A') {
+                        const sortValue = e.target.dataset.sort;
+                        label.textContent = e.target.textContent;
+                        switch (dropdown.id) {
+                            case 'sortWatchlist': currentWatchlistSort = sortValue; break;
+                            case 'sortWatchedlist': currentWatchedlistSort = sortValue; break;
+                            case 'sortRewatch': currentRewatchSort = sortValue; break;
+                        }
+                        renderLists();
+                        menu.classList.add('hidden');
+                    }
+                });
+            });
+
+            searchInput.addEventListener('input', e => handleLiveSearch(e.target.value));
+            searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMovies(searchInput.value.trim()); });
+            searchButton.addEventListener('click', () => searchMovies(searchInput.value.trim()));
+            
+            surpriseBtn.addEventListener('click', () => {
+                if (watchListData.length === 0) { showModal("The Box is empty! Add movies to your watchlist to summon a surprise."); return; }
+                const randomIndex = Math.floor(Math.random() * watchListData.length);
+                const surpriseMovie = watchListData[randomIndex];
+                const movieString = encodeURIComponent(JSON.stringify(surpriseMovie));
+                openDetailModal(movieString);
+            });
+            
+            toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
+            toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
+
+            
             const firstTab = document.querySelector('.tab-link');
             const firstTabContent = document.getElementById(firstTab.dataset.tab);
             firstTab.classList.add('active');
@@ -874,4 +878,3 @@
     </script>
 </body>
 </html>
-
