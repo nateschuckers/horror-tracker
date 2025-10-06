@@ -268,8 +268,11 @@
 
     <script>
         // IMPORTANT: REPLACE THESE WITH YOUR OWN SUPABASE KEYS
-        const SUPABASE_URL = https://zjodcuoopwewmqwvdniv.supabase.co; 
-        const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ;
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; 
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // DOM Elements
         const loader = document.getElementById('loader');
         const surpriseBtn = document.getElementById('surpriseBtn');
@@ -304,11 +307,10 @@
         const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
         const HORROR_GENRE_ID = 27;
         
-        // App State
-        let watchListData = JSON.parse(localStorage.getItem('watchList')) || [];
-        let watchedListData = JSON.parse(localStorage.getItem('watchedList')) || [];
-        let watchLog = JSON.parse(localStorage.getItem('watchLog')) || [];
-        let personalRatings = JSON.parse(localStorage.getItem('personalRatings')) || {};
+        // App State (will be populated from Supabase)
+        let watchListData = [];
+        let watchedListData = [];
+        let watchLog = [];
         let currentWatchlistSort = 'title-asc';
         let currentWatchedlistSort = 'recent';
         let currentRewatchSort = 'watches';
@@ -323,16 +325,16 @@
         };
         const getRatingColor = rating => { if (rating >= 7.6) return 'text-red-600'; if (rating >= 5.1) return 'text-green-400'; if (rating >= 2.6) return 'text-yellow-400'; return 'text-blue-400'; };
         const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
-        const saveLists = () => { localStorage.setItem('watchList', JSON.stringify(watchListData)); localStorage.setItem('watchedList', JSON.stringify(watchedListData)); localStorage.setItem('watchLog', JSON.stringify(watchLog)); localStorage.setItem('personalRatings', JSON.stringify(personalRatings)); };
+        
         const calculateAverage = (movieList, key, usePersonalRating = false) => {
             if (movieList.length === 0) return { avg: 0 };
             let ratedMovies = movieList;
-            if(usePersonalRating) {
-                ratedMovies = movieList.filter(movie => personalRatings[movie.id]);
+            if (usePersonalRating) {
+                ratedMovies = movieList.filter(movie => movie.personal_rating);
                 if (ratedMovies.length === 0) return { avg: 0 };
             }
             const total = ratedMovies.reduce((acc, movie) => {
-                if (usePersonalRating) return acc + parseInt(personalRatings[movie.id] || 0);
+                if (usePersonalRating) return acc + parseInt(movie.personal_rating || 0);
                 return acc + (movie[key] || 0);
             }, 0);
             const avg = total / ratedMovies.length;
@@ -408,7 +410,7 @@
             const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
             let buttons = '';
             if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
-            else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watch', ${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
+            else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
             else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
             modalButtons.innerHTML = buttons;
 
@@ -546,9 +548,11 @@
             }
         };
         
-        const setupSkullRating = (movieId, modal) => {
+        const setupSkullRating = async (movieId, modal) => {
             const skulls = modal.querySelectorAll('.skull-rating .fa-skull');
-            const currentRating = personalRatings[movieId] || 0;
+            const { data } = await _supabase.from('movies').select('personal_rating').eq('id', movieId).single();
+            const currentRating = data ? data.personal_rating : 0;
+            
             const updateSkulls = (rating) => {
                 skulls.forEach(skull => {
                     skull.classList.toggle('rated', parseInt(skull.dataset.value) <= rating);
@@ -560,19 +564,18 @@
                     skulls.forEach(s => s.classList.toggle('hover-rated', parseInt(s.dataset.value) <= rating));
                 };
                 skull.onmouseout = () => skulls.forEach(s => s.classList.remove('hover-rated'));
-                skull.onclick = () => {
-                    personalRatings[movieId] = parseInt(skull.dataset.value);
-                    saveLists();
-                    updateSkulls(personalRatings[movieId]);
-                    renderLists();
+                skull.onclick = async () => {
+                    const newRating = parseInt(skull.dataset.value);
+                    await _supabase.from('movies').update({ personal_rating: newRating }).eq('id', movieId);
+                    updateSkulls(newRating);
+                    loadInitialData(); // Re-fetch to update averages
                 };
             });
             updateSkulls(currentRating);
         };
         
-        const getPersonalRatingHTML = (movieId) => {
-            const rating = personalRatings[movieId] || 0;
-            if (rating === 0) return '';
+        const getPersonalRatingHTML = (rating) => {
+            if (!rating) return '';
             let skulls = '';
             for (let i = 1; i <= 10; i++) {
                 skulls += `<i class="fas fa-skull text-xs ${i <= rating ? 'text-amber-500' : 'text-gray-600'}"></i>`;
@@ -591,11 +594,11 @@
                 const movieElement = document.createElement('div');
                 movieElement.className = 'movie-card rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 bg-secondary';
                 let buttons = '';
-                if (listType === 'watch') buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow" onclick="markAsWatched(${movie.id})">Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watch', ${movie.id})">Remove</button>`;
-                else if (listType === 'watched') buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watched', ${movie.id})">Remove</button>`;
+                if (listType === 'watch') buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow" onclick="markAsWatched(${movie.id})">Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id})">Remove</button>`;
+                else if (listType === 'watched') buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatched(${movie.id})">Remove</button>`;
                 else { const isMovieInWatchList = watchListData.some(m => m.id === movie.id); buttons = `<div class="space-y-2"><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow ${isMovieInWatchList ? 'opacity-50 cursor-not-allowed' : ''}" onclick="addToWatchList('${movieString}')" ${isMovieInWatchList ? 'disabled' : ''}><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-check mr-2"></i> Mark as Watched</button></div>${isMovieInWatchList ? '<p class="text-center text-blue-400 mt-2">In Watch List</p>' : ''}${watchedListData.some(m => m.id === movie.id) ? '<p class="text-center text-green-400 mt-2">Already Watched</p>' : ''}`; }
                 const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
-                movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" onclick="openDetailModal('${movieString}')"><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.id) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
+                movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" onclick="openDetailModal('${movieString}')"><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.personal_rating) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
                 container.appendChild(movieElement);
             });
         };
@@ -623,7 +626,7 @@
             yearlyButtonsContainer.innerHTML = '';
             yearlyMoviesContainer.innerHTML = '';
             
-            const years = [...new Set(watchLog.map(log => log.year))].sort((a, b) => b - a);
+            const years = [...new Set(watchLog.map(log => new Date(log.watched_at).getFullYear()))].sort((a, b) => b - a);
             if (years.length === 0) return;
 
             years.forEach(year => {
@@ -636,7 +639,7 @@
 
             const displayMoviesForYear = (year) => {
                 yearlyMoviesContainer.innerHTML = '';
-                const movieIdsForYear = new Set(watchLog.filter(log => log.year == year).map(log => log.movieId));
+                const movieIdsForYear = new Set(watchLog.filter(log => new Date(log.watched_at).getFullYear() == year).map(log => log.movie_id));
                 const moviesForYear = [...movieIdsForYear].map(id => watchedListData.find(movie => movie.id === id)).filter(Boolean);
 
                 if (moviesForYear.length === 0) { yearlyMoviesContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">No movies logged for this year.</p>'; return; }
@@ -652,7 +655,7 @@
                             <p class="text-sm text-gray-400">${movie.director || 'Unknown Director'}</p>
                         </div>
                         <div class="text-right">
-                            ${getPersonalRatingHTML(movie.id)}
+                            ${getPersonalRatingHTML(movie.personal_rating)}
                         </div>
                     `;
                     yearlyMoviesContainer.appendChild(movieEl);
@@ -671,15 +674,18 @@
             if (yearlyButtonsContainer.firstChild) yearlyButtonsContainer.firstChild.click();
         };
 
-        const renderAdvancedCharts = () => {
+        const renderAdvancedCharts = async () => {
             const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'];
             if (directorsChartInstance) directorsChartInstance.destroy();
             if (genresChartInstance) genresChartInstance.destroy();
-            const directorCounts = watchedListData.reduce((acc, movie) => { if(movie.director) acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
+
+            const { data } = await _supabase.from('movies').select('director, release_date').not('director', 'is', null);
+            
+            const directorCounts = data.reduce((acc, movie) => { acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
             const sortedDirectors = Object.entries(directorCounts).sort(([,a],[,b]) => b-a).slice(0, 10);
             directorsChartInstance = new Chart(document.getElementById('directorsChart'), { type: 'bar', data: { labels: sortedDirectors.map(d => d[0]), datasets: [{ label: '# of Movies Watched', data: sortedDirectors.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: '#a1a1aa' }}, y: { ticks: { color: '#a1a1aa' }} }, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
             
-            const decadeCounts = watchedListData.reduce((acc, movie) => {
+            const decadeCounts = data.reduce((acc, movie) => {
                 if (movie.release_date) {
                     const year = parseInt(movie.release_date.substring(0, 4));
                     const decade = Math.floor(year / 10) * 10;
@@ -692,12 +698,33 @@
             
             genresChartInstance = new Chart(document.getElementById('genresChart'), { type: 'pie', data: { labels: sortedDecades.map(d => d[0]), datasets: [{ data: sortedDecades.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
         };
+        
+        async function loadInitialData() {
+            const { data: moviesData, error: moviesError } = await _supabase.from('movies').select('*');
+            if (moviesError) { console.error(moviesError); return; }
+            
+            const { data: watchLogData, error: logError } = await _supabase.from('watch_log').select('*');
+            if (logError) { console.error(logError); return; }
+
+            const { data: watchlistData, error: watchlistError } = await _supabase.from('watchlist').select('movie_id');
+            if (watchlistError) { console.error(watchlistError); return; }
+
+            watchedListData = moviesData.filter(movie => watchLogData.some(log => log.movie_id === movie.id));
+            const watchlistIds = new Set(watchlistData.map(item => item.movie_id));
+            watchListData = moviesData.filter(movie => watchlistIds.has(movie.id));
+            watchLog = watchLogData;
+            
+            renderLists();
+        }
 
         const renderLists = () => {
             const sortedWatchlist = [...watchListData].sort((a, b) => a.title.localeCompare(b.title));
             displayMovies(sortedWatchlist, watchListContainer, 'watch');
             let sortedWatchedlist;
-            if (currentWatchedlistSort === 'recent') sortedWatchedlist = [...watchedListData].reverse();
+            if (currentWatchedlistSort === 'recent') {
+                const watchedIdsOrder = watchLog.map(l => l.movie_id).reverse();
+                sortedWatchedlist = [...new Set(watchedIdsOrder)].map(id => watchedListData.find(m => m.id === id)).filter(Boolean);
+            }
             else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
             displayMovies(sortedWatchedlist, watchedListContainer, 'watched');
             renderRewatchStats();
@@ -708,53 +735,43 @@
         };
 
         // List Management
-        const addToWatchList = movieString => {
+        const addToWatchList = async (movieString) => {
             const movie = JSON.parse(decodeURIComponent(movieString));
-            if (watchListData.some(m => m.id === movie.id)) { showModal(movie.title, 'alreadyExists'); return; }
-            watchListData.push(movie);
-            saveLists(); renderLists(); showModal(movie.title, 'addWatchlist'); handleLiveSearch(searchInput.value);
+            // Add to movies table first to ensure it exists
+            await _supabase.from('movies').upsert({ id: movie.id, ...movie }, { onConflict: 'id' });
+            // Then add to watchlist
+            await _supabase.from('watchlist').insert({ movie_id: movie.id });
+            loadInitialData();
+            showModal(movie.title, 'addWatchlist');
         };
-        const addToWatchedList = async movieString => {
+        const addToWatchedList = async (movieString) => {
             const movie = JSON.parse(decodeURIComponent(movieString));
-            let movieInList = watchedListData.find(m => m.id === movie.id);
-            if (!movieInList) {
-                 const fullDetails = await fetchMovieById(movie.id);
-                 movie.director = fullDetails.director;
-                 watchedListData.push(movie);
-                 movieInList = movie;
-            }
-            const watchListIndex = watchListData.findIndex(m => m.id === movie.id);
-            if (watchListIndex > -1) watchListData.splice(watchListIndex, 1);
-            watchLog.push({ movieId: movie.id, year: new Date().getFullYear() });
-            saveLists(); renderLists(); openRatingModal(movieInList); handleLiveSearch(searchInput.value);
+            const fullDetails = await fetchMovieById(movie.id);
+            await _supabase.from('movies').upsert({ id: movie.id, director: fullDetails.director, ...movie }, { onConflict: 'id' });
+            await _supabase.from('watch_log').insert({ movie_id: movie.id });
+            await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
+            loadInitialData();
+            openRatingModal(movie);
         };
-        const markAsWatched = async movieId => {
-            const movieIndex = watchListData.findIndex(m => m.id === movieId);
-            if (movieIndex > -1) {
-                const [movie] = watchListData.splice(movieIndex, 1);
-                let movieInList = watchedListData.find(m => m.id === movie.id);
-                if (!movieInList) {
-                    if (!movie.director) {
-                        const fullDetails = await fetchMovieById(movie.id);
-                        movie.director = fullDetails.director;
-                    }
-                    watchedListData.push(movie);
-                    movieInList = movie;
-                }
-                watchLog.push({ movieId: movie.id, year: new Date().getFullYear() });
-                saveLists(); renderLists(); openRatingModal(movieInList);
-            }
+        const markAsWatched = async (movieId) => {
+            const movie = watchListData.find(m => m.id === movieId);
+            await _supabase.from('watch_log').insert({ movie_id: movieId });
+            await _supabase.from('watchlist').delete().eq('movie_id', movieId);
+            loadInitialData();
+            openRatingModal(movie);
         };
-        const removeFromList = (listType, movieId) => {
-            let movieTitle = '';
-            if (listType === 'watch') {
-                const index = watchListData.findIndex(m => m.id === movieId);
-                if (index > -1) { movieTitle = watchListData[index].title; watchListData.splice(index, 1); showModal(movieTitle, 'removedWatchlist'); }
-            } else {
-                const index = watchedListData.findIndex(m => m.id === movieId);
-                if (index > -1) { movieTitle = watchedListData[index].title; watchedListData.splice(index, 1); watchLog = watchLog.filter(log => log.movieId !== movieId); showModal(movieTitle, 'removedWatched'); }
-            }
-            saveLists(); renderLists(); if (searchInput.value) handleLiveSearch(searchInput.value);
+        const removeFromWatchlist = async (movieId) => {
+             const movie = watchListData.find(m => m.id === movieId);
+            await _supabase.from('watchlist').delete().eq('movie_id', movieId);
+            loadInitialData();
+            showModal(movie.title, 'removedWatchlist');
+        };
+        const removeFromWatched = async (movieId) => {
+            const movie = watchedListData.find(m => m.id === movieId);
+            await _supabase.from('watch_log').delete().eq('movie_id', movieId);
+             await _supabase.from('movies').update({ personal_rating: null }).eq('id', movieId);
+            loadInitialData();
+            showModal(movie.title, 'removedWatched');
         };
         
         // Live Search
@@ -852,7 +869,7 @@
             const firstTabContent = document.getElementById(firstTab.dataset.tab);
             firstTab.classList.add('active');
             if (firstTabContent) firstTabContent.classList.add('active');
-            renderLists();
+            loadInitialData();
         });
     </script>
 </body>
