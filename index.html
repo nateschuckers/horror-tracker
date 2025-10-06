@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Creepster&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -266,6 +267,10 @@
                 <div id="personalRatingSection" class="my-6"> <p class="text-sm text-gray-500 mb-2">MY RATING</p> <div class="skull-rating text-lg md:text-xl flex flex-wrap"> <i class="fas fa-skull p-1" data-value="1"></i><i class="fas fa-skull p-1" data-value="2"></i><i class="fas fa-skull p-1" data-value="3"></i><i class="fas fa-skull p-1" data-value="4"></i><i class="fas fa-skull p-1" data-value="5"></i><i class="fas fa-skull p-1" data-value="6"></i><i class="fas fa-skull p-1" data-value="7"></i><i class="fas fa-skull p-1" data-value="8"></i><i class="fas fa-skull p-1" data-value="9"></i><i class="fas fa-skull p-1" data-value="10"></i> </div> </div> <h3 class="text-xl font-bold text-gray-300 mt-6 mb-2">Overview</h3> <p id="modalOverview" class="text-gray-400 mb-6">Movie overview goes here...</p> <div id="modalButtons" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-6"></div> </div> </div> </div> </div>
 
     <script>
+        // IMPORTANT: REPLACE THESE WITH YOUR OWN SUPABASE KEYS
+        const SUPABASE_URL = https://zjodcuoopwewmqwvdniv.supabase.co; 
+        const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ;
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         // DOM Elements
         const loader = document.getElementById('loader');
         const surpriseBtn = document.getElementById('surpriseBtn');
