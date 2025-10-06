@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>31 Nights of Horror</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Creepster&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1b1c1d;
+            overflow-x: hidden; /* Prevent horizontal scroll from fog */
+        }
+        .font-creepster {
+            font-family: 'Creepster', cursive;
+            letter-spacing: 0.1em;
+        }
+        .bg-secondary {
+             background-color: #333537;
+        }
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 15px -3px rgba(153, 27, 27, 0.4), 0 4px 6px -2px rgba(153, 27, 27, 0.2);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #333537;
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid #4b5563;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 0.5rem;
+            position: relative;
+            transition: border-color 0.5s ease;
+        }
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-button:hover {
+            color: #fff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-link.active {
+            border-color: #991b1b;
+            color: #ef4444;
+        }
+         #liveSearchResults::-webkit-scrollbar, #rewatchStats::-webkit-scrollbar, .modal-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        #liveSearchResults::-webkit-scrollbar-track, #rewatchStats::-webkit-scrollbar-track, .modal-scroll::-webkit-scrollbar-track {
+            background: #333537;
+        }
+         #liveSearchResults::-webkit-scrollbar-thumb, #rewatchStats::-webkit-scrollbar-thumb, .modal-scroll::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 4px;
+        }
+        .quote {
+            font-family: 'Anton', sans-serif;
+            color: #a1a1aa;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .movie-card-clickable {
+            cursor: pointer;
+        }
+        .btn-glow {
+            transition: all 0.3s ease;
+        }
+        .btn-glow:hover, .btn-glow:focus {
+            box-shadow: 0 0 15px 3px rgba(220, 38, 38, 0.6);
+        }
+        
+        /* --- Atmospheric Effects --- */
+        @keyframes staticFlicker { 0%, 100% { opacity: 0.04; } 50% { opacity: 0.08; } }
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUEUgAAADIAAAAyBAMAAADsEZWCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVQTFRFAAAAAAAAEBAQICAwMDBAQEBAgICAgICAwMDAw/aOAAAACHRSTlMAAQkfLS9OU1hsc3yGj5SZp8HDzNXm8/X+3RXcAgAAARNJREFUeNqslFsKgzAMQ+2s2dX///2t20w6KQu8OEeRecWpa1gxb4lJpsU60lWdYqlBNU1e1Y0KkK5SNQ21rCqCVVXBKOoqISw5w8so1jFiChWUcSgrBfL/wZ0aUqhe1AOkA3X1o/aAHkAFiBpAB4gO4gK4AC4gG4gOxgfygZwA84E84Hwga/gI/gIeYQjxgGfGQ8wgvsRE4jGWGK/xwjgR1seRrkS5EhdRn8hBvEa5GuRLp1O+xbdW69WruW3duo29G2/Uj/tV/T6/ot/D7/Ff/vH/Jn/WP/mH/Cn/RD/pT/pB/wE/4D/4h/wB/4A/4A/4A/4BfwFP2U4z/AAAAAElFTSuQmCC');
+            opacity: 0.05; z-index: 999; pointer-events: none; animation: staticFlicker 0.2s infinite;
+        }
+        
+        @keyframes moveFog { 0% { transform: translateX(-25%); } 50% { transform: translateX(25%); } 100% { transform: translateX(-25%); } }
+        #fog-layer {
+            position: fixed; bottom: -50px; left: -50%; width: 200%; height: 100%;
+            background: radial-gradient(ellipse at bottom, rgba(51, 53, 55, 0.25) 0%, rgba(51, 53, 55, 0) 60%);
+            z-index: 1; pointer-events: none; animation: moveFog 50s linear infinite alternate;
+        }
+        
+        /* --- Gothic Divider --- */
+        .gothic-divider { position: relative; padding-bottom: 1rem; }
+        .gothic-divider::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 350px; height: 1px; background: linear-gradient(to right, transparent, #991b1b 50%, transparent); }
+        .gothic-divider::before { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; border: 1px solid #991b1b; background: #333537; }
+
+        /* --- Blood Meter --- */
+        @keyframes pulse { 0%, 100% { box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 0 0 10px #ef4444; } 50% { box-shadow: inset 0 0 12px rgba(0,0,0,0.8), 0 0 18px #ef4444; } }
+        #progressBar { background: #991b1b; box-shadow: inset 0 0 8px rgba(0,0,0,0.6); border: 1px solid #450a0a; }
+        #progressBar.overdrive { background: linear-gradient(to right, #e11d48, #facc15); animation: pulse 1.5s infinite; }
+        
+        /* --- Flickering Title --- */
+        @keyframes flicker {
+          0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+            text-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444, 0 0 20px #dc2626, 0 0 40px #b91c1c, 0 0 60px #991b1b;
+            color: #fecaca;
+          }
+          20%, 24%, 55% { text-shadow: none; color: #ef4444; }
+        }
+        .flicker-title { animation: flicker 4s infinite alternate; }
+
+        /* --- Jack-o-lantern Loader --- */
+        #loader { display: none; text-align: center; }
+        @keyframes pumpkinFlicker { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px #f59e0b); } 50% { opacity: 0.7; filter: drop-shadow(0 0 20px #f59e0b); } }
+        #loader svg { animation: pumpkinFlicker 1.5s ease-in-out infinite; }
+        
+        /* --- Personal Rating Skulls --- */
+        .skull-rating .fa-skull { color: #4b5563; cursor: pointer; transition: color 0.2s, transform 0.2s; }
+        .skull-rating .fa-skull:hover { color: #a1a1aa; transform: scale(1.1); }
+        .skull-rating .fa-skull.rated, .skull-rating:hover .fa-skull.hover-rated { color: #f59e0b; }
+    </style>
+</head>
+<body class="text-white">
+    <div id="fog-layer"></div>
+    <div class="container mx-auto p-4 md:p-8 relative z-10">
+        <header class="text-center mb-10">
+            <h1 class="flicker-title text-5xl md:text-7xl font-creepster text-red-700 tracking-wider">
+                31 Nights of Horror
+            </h1>
+            <p class="quote mt-4">You can't kill the boogeyman</p>
+        </header>
+
+        <!-- Search Section -->
+        <div class="relative max-w-2xl mx-auto" id="searchContainer">
+            <div class="flex rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+                <input type="text" id="searchInput" placeholder="Search for a horror movie..." class="w-full text-white p-4 focus:outline-none focus:ring-2 focus:ring-red-800 bg-secondary" autocomplete="off">
+                <button id="searchButton" class="bg-red-800 hover:bg-red-900 text-white px-6 py-4 transition duration-300 btn-glow">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div id="liveSearchResults" class="absolute top-full left-0 right-0 z-50 border border-gray-700 rounded-b-lg mt-1 shadow-lg hidden overflow-y-auto max-h-96 bg-secondary"></div>
+        </div>
+
+
+        <!-- Tabs Navigation -->
+        <div class="mb-8 border-b border-gray-800 mt-10">
+            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button class="tab-link whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-lg text-gray-500 hover:text-red-600 hover:border-red-700" data-tab="dashboard"> <i class="fas fa-skull mr-2"></i>Welcome to Prime Time </button>
+                <button class="tab-link whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-lg text-gray-500 hover:text-red-600 hover:border-red-700" data-tab="watchlist"> <i class="fas fa-eye mr-2"></i>The Viewing Room </button>
+                <button class="tab-link whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-lg text-gray-500 hover:text-red-600 hover:border-red-700" data-tab="watchedlist"> <i class="fas fa-skull-crossbones mr-2"></i>The Body Count </button>
+                <button class="tab-link whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-lg text-gray-500 hover:text-red-600 hover:border-red-700" data-tab="rewatchstats"> <i class="fas fa-sync-alt mr-2"></i>They Always Come Back </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div>
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content">
+                <!-- Stats Section -->
+                <div class="max-w-3xl mx-auto">
+                     <div class="flex justify-center items-center mb-4 space-x-2">
+                        <button id="toggleWatchedStatsBtn" class="p-3 rounded-lg bg-red-800 text-white transition-colors duration-300"><i class="fas fa-skull-crossbones fa-fw"></i></button>
+                        <button id="toggleWatchlistStatsBtn" class="p-3 rounded-lg bg-secondary text-gray-400 transition-colors duration-300"><i class="fas fa-eye fa-fw"></i></button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-10 text-center">
+                        <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p id="dashboardStatLabel1" class="text-sm text-gray-400">Watched</p> <p id="dashboardStatValue1" class="text-3xl font-bold text-white">0</p> </div>
+                        <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p id="dashboardStatLabel2" class="text-sm text-gray-400">My Avg. Rating</p> <p id="dashboardStatValue2" class="text-3xl font-bold text-white">0.0</p> </div>
+                        <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p id="dashboardStatLabel3" class="text-sm text-gray-400">TMDb Avg. Rating</p> <p id="dashboardStatValue3" class="text-3xl font-bold text-white">0.0</p> </div>
+                    </div>
+                </div>
+                <!-- Status Section -->
+                <div class="mb-10 p-6 rounded-lg border border-gray-800 shadow-lg bg-secondary">
+                    <h2 class="text-2xl font-bold text-center text-gray-400 italic mb-4 quote">Whatever you do... don't fall asleep.</h2>
+                    <div class="w-full rounded-full h-8 p-1 border border-gray-700 bg-black/50"> <div id="progressBar" class="h-full rounded-full flex items-center justify-center text-sm font-medium text-white transition-all duration-500" style="width: 0%;"></div> </div>
+                    <p id="progressText" class="text-center text-gray-500 mt-2">0 / 31 Movies Watched This Year</p>
+                </div>
+                <!-- New Blood Challenge -->
+                <div class="mb-10 p-6 rounded-lg border border-gray-800 shadow-lg bg-secondary">
+                    <h2 class="text-2xl font-bold text-center text-gray-400 italic mb-4 quote">Fresh Blood Challenge</h2>
+                    <div id="newBloodTracker" class="flex justify-center items-center space-x-2 text-4xl my-4">
+                        <!-- Icons will be dynamically inserted here -->
+                    </div>
+                    <p id="newBloodText" class="text-center text-gray-500 mt-2">0 / 10 First-Time Watches</p>
+                </div>
+                <!-- Summon a Surprise Section -->
+                <div class="mb-10 p-6 rounded-lg border border-gray-800 shadow-lg bg-secondary flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-500 italic quote">What's your pleasure, sir?</h3>
+                    <button id="surpriseBtn" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-6 rounded transition duration-300 btn-glow">
+                        <i class="fas fa-cube mr-2"></i>Jesus Weeps
+                    </button>
+                </div>
+                <!-- Search Results -->
+                <div id="searchResults" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div>
+                <div id="loader"> <svg width="100" height="100" viewBox="-2 -2 36 36" xmlns="http://www.w3.org/2000/svg" class="text-amber-500"><path fill="currentColor" d="M31.22 15.22a1 1 0 0 1-1 .94h-3.52a1 1 0 0 1 0-2h2.79c.33-2 .16-4-.47-5.91a1 1 0 0 1 .66-1.25l.3-.08a1 1 0 0 1 1.25.66c.8 2.33 1 4.75.49 7.14c.01 0 .01 0 0 .01a.97.97 0 0 1-.5.49Zm-7-11.45a1 1 0 0 1-1.25-.66c-.34-1-.77-1.96-1.28-2.88a1 1 0 0 1 .59-1.34l.35-.14a1 1 0 0 1 1.34.59c.58 1.05 1.05 2.14 1.41 3.25l.01-.01a1 1 0 0 1-.17 1.2Zm-8.47-2.7a1 1 0 0 1-1.34-.59c-.92-.38-1.87-.66-2.86-.83a1 1 0 0 1-.84-1.15l.04-.36a1 1 0 0 1 1.15-.84c1.15.2 2.27.52 3.32.95l.01 0a1 1 0 0 1 .52 1.82Zm-9.11 3.11a1 1 0 0 1-.52-1.82c.4-.17.8-.32 1.21-.46a1 1 0 0 1 .91 1.08v.37a1 1 0 0 1-1.08.91c-.48-.06-.95-.14-1.42-.23l-.01-.01ZM2 16.16h3.52a1 1 0 0 1 0 2H2.73c-.33 2-.16 4 .47 5.91a1 1 0 0 1-.66 1.25l-.3.08a1 1 0 0 1-1.25-.66c-.8-2.33-1-4.75-.49-7.14l0-.01a1 1 0 0 1 .5-.49Zm7 11.45a1 1 0 0 1 1.25.66c.34 1 .77 1.96 1.28 2.88a1 1 0 0 1-.59 1.34l-.35.14a1 1 0 0 1-1.34-.59c-.58-1.05-1.05-2.14-1.41-3.25l0 .01a1 1 0 0 1 .16-1.19ZM15.75 31a1 1 0 0 1 1.34.59c.92.38 1.87.66 2.86.83a1 1 0 0 1 .84 1.15l-.04.36a1 1 0 0 1-1.15.84c-1.15-.2-2.27-.52-3.32-.95l0 0a1 1 0 0 1-.53-1.82Zm9.11-3.11a1 1 0 0 1 .52 1.82c-.4.17-.8.32-1.21.46a1 1 0 0 1-.91-1.08v-.37a1 1 0 0 1 1.08-.91c.48.06.95.14 1.42.23h.01ZM16 2a5 5 0 0 0-5 5v.5a.5.5 0 0 1-1 0V7a6 6 0 0 1 6-6a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H16Zm8.65 22.52a6.46 6.46 0 0 0-16.3 0a1.91 1.91 0 0 0 1.83 1.84h12.64a1.91 1.91 0 0 0 1.83-1.84Zm-14.82-.36a4.46 4.46 0 0 1 8.34 0ZM19 14a1 1 0 0 0-2 0a1 1 0 1 0-2 0a1 1 0 1 0-2 0a3 3 0 1 1 6 0Zm-1.28 4.2a1 1 0 0 0-1.44 1.4l.79.77l-1.07 1a1 1 0 0 0 1.38 1.44l1.07-1l.73.72a1 1 0 0 0 1.44-1.44l-.72-.73l1-1.07a1 1 0 0 0-1.44-1.38l-1 .92Z"/></svg></div>
+            </div>
+            <!-- Other Tabs... -->
+            <div id="watchlist" class="tab-content"> <div class="flex justify-between items-center mb-4 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-eye mr-2"></i>The Viewing Room</h2> <div id="sortWatchlist" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Title (A-Z)</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-4">We have such sights to show you.</h2> <div id="watchList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div> </div>
+            <div id="watchedlist" class="tab-content"> <div class="flex justify-between items-center mb-4 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-skull-crossbones mr-2"></i>The Body Count</h2> <div id="sortWatchedlist" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Recent</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="recent">Most Recent</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-4">His name was Jason... and today is his birthday.</h2> <div id="watchedList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div> </div>
+            <div id="rewatchstats" class="tab-content"> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> </div> <div class="flex justify-between items-center mb-6 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</h2> <div id="sortRewatch" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <div id="rewatchStatsContainer" class="space-y-4"></div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> </div> <div class="mt-12"> <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-book-dead mr-2"></i>Annual Kill Count</h2> <div id="yearlyButtonsContainer" class="flex flex-wrap gap-2 mb-6"></div> <div id="yearlyMoviesContainer" class="space-y-3"></div> </div> </div>
+        </div>
+    </div>
+    <!-- Modals outside container -->
+    <div id="messageModal" class="modal"> <div class="modal-content !max-w-sm !py-8 text-center bg-secondary"> <div id="modalIcon" class="text-4xl mb-4"></div> <p id="modalMessage" class="text-lg text-white mb-6">Message here.</p> <button onclick="closeMessageModal()" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Close</button> </div> </div>
+    <div id="goalModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary border-red-700 border-2"> <div class="text-6xl mb-4 text-red-500"><i class="fas fa-trophy animate-bounce"></i></div> <h2 class="text-3xl font-creepster text-red-500 mb-4">Challenge Complete!</h2> <p class="text-lg text-white mb-6">You've survived 31 nights of horror... and then some.</p> <p class="quote mt-4 mb-6">"It's alive! It's alive!"</p> <button onclick="closeGoalModal()" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Continue the Horror</button> </div> </div>
+    <div id="ratingModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary"> <h2 class="text-2xl font-creepster text-red-500 mb-2">You've Claimed a New Victim!</h2> <p id="ratingModalTitle" class="text-lg text-white mb-4"></p> <div id="ratingModalPersonalRating" class="my-6"> <p class="text-sm text-gray-500 mb-2">RATE YOUR EXPERIENCE</p> <div class="skull-rating text-3xl flex flex-wrap justify-center"></div> </div> <button onclick="closeRatingModal()" class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Seal Their Fate</button> </div> </div>
+    <div id="movieDetailModal" class="modal"> <div class="modal-content relative"> <span class="close-button" onclick="closeDetailModal()">&times;</span> <div class="md:flex md:space-x-8"> <div class="md:w-1/3"> <img id="modalPoster" src="" alt="Movie Poster" class="rounded-lg shadow-lg w-full" crossorigin="anonymous"> </div> <div class="md:w-2/3 mt-6 md:mt-0 modal-scroll max-h-[70vh] overflow-y-auto pr-4"> <h2 id="modalTitle" class="text-3xl font-bold text-red-600 transition-colors duration-500">Movie Title</h2> <p id="modalYearAndDirector" class="text-lg text-gray-400 mb-4">Year</p>
+                <div class="flex items-center my-4">
+                    <div class="pr-4">
+                        <p class="text-sm text-gray-500">TMDb RATING</p>
+                        <div id="modalRatingContainer" class="text-2xl font-bold"> <i class="fas fa-star fa-fw mr-1"></i><span id="modalRating"></span> </div>
+                    </div>
+                    <div class="px-4 border-l border-r border-gray-700">
+                        <p class="text-sm text-gray-500">POPULARITY</p>
+                        <div id="modalPopularityContainer" class="text-2xl font-bold"> <i class="fas fa-fire fa-fw mr-1"></i><span id="modalPopularity"></span> </div>
+                    </div>
+                     <div class="pl-4">
+                        <a id="tmdbLink" href="#" target="_blank" rel="noopener noreferrer" class="bg-secondary hover:bg-red-800 text-white font-bold py-2 px-4 rounded text-sm transition duration-300 btn-glow">
+                            TMDB <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-center text-sm my-4 border-t border-b border-gray-700 py-3">
+                    <div>
+                        <p class="font-bold text-gray-400">BUDGET</p>
+                        <p id="modalBudget">N/A</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-400">REVENUE</p>
+                        <p id="modalRevenue">N/A</p>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-400">PROFIT</p>
+                        <p id="modalProfitContainer" class="font-bold text-lg"><span id="modalProfit">N/A</span></p>
+                    </div>
+                </div>
+                <div id="personalRatingSection" class="my-6"> <p class="text-sm text-gray-500 mb-2">MY RATING</p> <div class="skull-rating text-lg md:text-xl flex flex-wrap"> <i class="fas fa-skull p-1" data-value="1"></i><i class="fas fa-skull p-1" data-value="2"></i><i class="fas fa-skull p-1" data-value="3"></i><i class="fas fa-skull p-1" data-value="4"></i><i class="fas fa-skull p-1" data-value="5"></i><i class="fas fa-skull p-1" data-value="6"></i><i class="fas fa-skull p-1" data-value="7"></i><i class="fas fa-skull p-1" data-value="8"></i><i class="fas fa-skull p-1" data-value="9"></i><i class="fas fa-skull p-1" data-value="10"></i> </div> </div> <h3 class="text-xl font-bold text-gray-300 mt-6 mb-2">Overview</h3> <p id="modalOverview" class="text-gray-400 mb-6">Movie overview goes here...</p> <div id="modalButtons" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-6"></div> </div> </div> </div> </div>
+
+    <script>
+        // DOM Elements
+        const loader = document.getElementById('loader');
+        const surpriseBtn = document.getElementById('surpriseBtn');
+        const searchContainer = document.getElementById('searchContainer');
+        const searchButton = document.getElementById('searchButton');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const liveSearchResults = document.getElementById('liveSearchResults');
+        const watchListContainer = document.getElementById('watchList');
+        const watchedListContainer = document.getElementById('watchedList');
+        const rewatchStatsContainer = document.getElementById('rewatchStatsContainer');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalIcon = document.getElementById('modalIcon');
+        const movieDetailModal = document.getElementById('movieDetailModal');
+        const ratingModal = document.getElementById('ratingModal');
+        const goalModal = document.getElementById('goalModal');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const tabs = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const sortDropdowns = document.querySelectorAll('.sort-dropdown');
+        const toggleWatchedStatsBtn = document.getElementById('toggleWatchedStatsBtn');
+        const toggleWatchlistStatsBtn = document.getElementById('toggleWatchlistStatsBtn');
+        const newBloodTracker = document.getElementById('newBloodTracker');
+        const newBloodText = document.getElementById('newBloodText');
+        
+        // Chart instances
+        let directorsChartInstance, genresChartInstance;
+
+        // TMDB Config
+        const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
+        const HORROR_GENRE_ID = 27;
+        
+        // App State
+        let watchListData = JSON.parse(localStorage.getItem('watchList')) || [];
+        let watchedListData = JSON.parse(localStorage.getItem('watchedList')) || [];
+        let watchLog = JSON.parse(localStorage.getItem('watchLog')) || [];
+        let personalRatings = JSON.parse(localStorage.getItem('personalRatings')) || {};
+        let currentWatchlistSort = 'title-asc';
+        let currentWatchedlistSort = 'recent';
+        let currentRewatchSort = 'watches';
+        let dashboardStatView = 'watched';
+        
+        // Utility Functions
+        const formatCurrency = (amount) => {
+            if (!amount) return "N/A";
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1
+            }).format(amount);
+        };
+        const getRatingColor = rating => { if (rating >= 7.6) return 'text-red-600'; if (rating >= 5.1) return 'text-green-400'; if (rating >= 2.6) return 'text-yellow-400'; return 'text-blue-400'; };
+        const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
+        const saveLists = () => { localStorage.setItem('watchList', JSON.stringify(watchListData)); localStorage.setItem('watchedList', JSON.stringify(watchedListData)); localStorage.setItem('watchLog', JSON.stringify(watchLog)); localStorage.setItem('personalRatings', JSON.stringify(personalRatings)); };
+        const calculateAverage = (movieList, key, usePersonalRating = false) => {
+            if (movieList.length === 0) return { avg: 0 };
+            let ratedMovies = movieList;
+            if(usePersonalRating) {
+                ratedMovies = movieList.filter(movie => personalRatings[movie.id]);
+                if (ratedMovies.length === 0) return { avg: 0 };
+            }
+            const total = ratedMovies.reduce((acc, movie) => {
+                if (usePersonalRating) return acc + parseInt(personalRatings[movie.id] || 0);
+                return acc + (movie[key] || 0);
+            }, 0);
+            const avg = total / ratedMovies.length;
+            return { avg };
+        };
+
+        // Modal Functions
+        const showModal = (title, type = 'info') => {
+            let message = '', iconHtml = '';
+            switch (type) {
+                case 'addWatchlist': message = `'${title}' has been summoned.`; iconHtml = '<i class="fas fa-eye text-blue-400"></i>'; break;
+                case 'alreadyExists': message = `'${title}' already haunts your lists.`; iconHtml = '<i class="fas fa-ghost text-yellow-400"></i>'; break;
+                case 'removedWatchlist': message = `'${title}' has vanished.`; iconHtml = '<i class="fas fa-eye-slash text-gray-500"></i>'; break;
+                case 'removedWatched': message = `'${title}' has been exorcised.`; iconHtml = '<i class="fas fa-ban text-red-500"></i>'; break;
+                default: message = title; iconHtml = '<i class="fas fa-info-circle text-gray-400"></i>';
+            }
+            modalMessage.textContent = message;
+            modalIcon.innerHTML = iconHtml;
+            messageModal.style.display = 'block';
+        };
+
+        const closeMessageModal = () => messageModal.style.display = 'none';
+        const closeGoalModal = () => goalModal.style.display = 'none';
+        const closeRatingModal = () => ratingModal.style.display = 'none';
+
+        const openRatingModal = (movie) => {
+            document.getElementById('ratingModalTitle').textContent = movie.title;
+            const skullContainer = ratingModal.querySelector('.skull-rating');
+            skullContainer.innerHTML = '';
+            for(let i = 1; i <= 10; i++) {
+                const skull = document.createElement('i');
+                skull.className = 'fas fa-skull p-1';
+                skull.dataset.value = i;
+                skullContainer.appendChild(skull);
+            }
+            setupSkullRating(movie.id, ratingModal);
+            ratingModal.style.display = 'block';
+        };
+
+        const openDetailModal = async (movieString) => {
+            const movie = JSON.parse(decodeURIComponent(movieString));
+            const modalContent = movieDetailModal.querySelector('.modal-content');
+            const modalTitle = document.getElementById('modalTitle');
+            const poster = document.getElementById('modalPoster');
+            
+            poster.src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+            poster.onload = () => {
+                try {
+                    const colorThief = new ColorThief();
+                    const dominantColor = colorThief.getColor(poster);
+                    const color = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+                    modalContent.style.borderColor = color;
+                    modalTitle.style.color = color;
+                } catch(e) { console.error("ColorThief Error:", e); modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; }
+            };
+            poster.onerror = () => { modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; };
+
+            modalTitle.textContent = movie.title;
+            document.getElementById('modalYearAndDirector').textContent = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
+            document.getElementById('modalRating').textContent = movie.vote_average.toFixed(1);
+            document.getElementById('modalPopularity').textContent = Math.round(movie.popularity);
+            document.getElementById('modalRatingContainer').className = 'text-2xl font-bold ' + getRatingColor(movie.vote_average);
+            document.getElementById('modalPopularityContainer').className = 'text-2xl font-bold ' + getPopularityColor(movie.popularity);
+            document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
+            document.getElementById('tmdbLink').href = `https://www.themoviedb.org/movie/${movie.id}`;
+            const movieStringForEvent = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+            
+            const isMovieInWatchedList = watchedListData.some(m => m.id === movie.id);
+            document.getElementById('personalRatingSection').style.display = isMovieInWatchedList ? 'block' : 'none';
+            if (isMovieInWatchedList) setupSkullRating(movie.id, movieDetailModal);
+
+            const modalButtons = document.getElementById('modalButtons');
+            const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
+            let buttons = '';
+            if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
+            else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watch', ${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
+            else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
+            modalButtons.innerHTML = buttons;
+
+            const modalBudget = document.getElementById('modalBudget');
+            const modalRevenue = document.getElementById('modalRevenue');
+            const modalProfit = document.getElementById('modalProfit');
+            const modalProfitContainer = document.getElementById('modalProfitContainer');
+            modalBudget.textContent = '...'; modalRevenue.textContent = '...'; modalProfit.textContent = '...';
+            modalProfitContainer.classList.remove('text-red-500', 'text-green-400');
+            movieDetailModal.style.display = 'block';
+
+            const fullDetails = await fetchMovieById(movie.id);
+            if (fullDetails) {
+                 document.getElementById('modalYearAndDirector').textContent = `${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'} · ${fullDetails.director || 'Unknown'}`;
+                if (fullDetails.budget > 0 || fullDetails.revenue > 0) {
+                    const profit = fullDetails.revenue - fullDetails.budget;
+                    modalBudget.textContent = formatCurrency(fullDetails.budget);
+                    modalRevenue.textContent = formatCurrency(fullDetails.revenue);
+                    modalProfit.textContent = formatCurrency(profit);
+                    if (profit >= 0) modalProfitContainer.classList.add('text-green-400');
+                    else modalProfitContainer.classList.add('text-red-500');
+                } else {
+                    modalBudget.textContent = 'N/A'; modalRevenue.textContent = 'N/A'; modalProfit.textContent = 'N/A';
+                }
+            }
+        };
+
+        const closeDetailModal = () => {
+             movieDetailModal.style.display = 'none';
+             const modalContent = movieDetailModal.querySelector('.modal-content');
+             const modalTitle = document.getElementById('modalTitle');
+             modalContent.style.borderColor = '#4b5563';
+             modalTitle.style.color = '#ef4444';
+        };
+
+        // API Fetching
+        const fetchHorrorMovies = async query => {
+            searchResults.innerHTML = '';
+            loader.style.display = 'block';
+            if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return { error: 'Please enter your TMDB API key.' };
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                loader.style.display = 'none';
+                return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
+            } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
+        };
+        const fetchMovieById = async movieId => {
+            if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return null;
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                const director = data.credits.crew.find(person => person.job === 'Director');
+                data.director = director ? director.name : 'Unknown';
+                return data;
+            } catch (error) { console.error(`Error fetching movie ${movieId}:`, error); return null; }
+        };
+
+        // Main App Logic & Rendering
+        const renderDashboardStats = () => {
+            const currentYear = new Date().getFullYear();
+            const watchedThisYearLogs = watchLog.filter(log => log.year === currentYear);
+            const watchedThisYearMovies = watchedThisYearLogs.map(log => watchedListData.find(m => m.id === log.movieId)).filter(Boolean);
+            let listToDisplay, label1, label2, label3, value2, value3;
+            
+            if (dashboardStatView === 'watched') {
+                listToDisplay = watchedThisYearMovies;
+                label1 = 'Watched'; label2 = 'My Avg. Rating'; label3 = 'TMDb Avg. Rating';
+                value2 = calculateAverage(listToDisplay, 'vote_average', true);
+                value3 = calculateAverage(listToDisplay, 'vote_average');
+                toggleWatchedStatsBtn.classList.add('bg-red-800', 'text-white');
+                toggleWatchedStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
+                toggleWatchlistStatsBtn.classList.add('bg-secondary', 'text-gray-400');
+                toggleWatchlistStatsBtn.classList.remove('bg-red-800', 'text-white');
+            } else { // 'watchlist'
+                listToDisplay = watchListData;
+                label1 = 'In Watchlist'; label2 = 'TMDb Avg. Rating'; label3 = 'Avg. Popularity';
+                value2 = calculateAverage(listToDisplay, 'vote_average');
+                value3 = calculateAverage(listToDisplay, 'popularity');
+                toggleWatchlistStatsBtn.classList.add('bg-red-800', 'text-white');
+                toggleWatchlistStatsBtn.classList.remove('bg-secondary', 'text-gray-400');
+                toggleWatchedStatsBtn.classList.add('bg-secondary', 'text-gray-400');
+                toggleWatchedStatsBtn.classList.remove('bg-red-800', 'text-white');
+            }
+
+            document.getElementById('dashboardStatLabel1').textContent = label1;
+            document.getElementById('dashboardStatValue1').textContent = listToDisplay.length;
+            document.getElementById('dashboardStatLabel2').textContent = label2;
+            document.getElementById('dashboardStatValue2').textContent = value2.avg.toFixed(1);
+            document.getElementById('dashboardStatLabel3').textContent = label3;
+            document.getElementById('dashboardStatValue3').textContent = label3 === 'Avg. Popularity' ? Math.round(value3.avg) : value3.avg.toFixed(1);
+        };
+        
+        const updateAllTimeStats = () => {
+            document.getElementById('statTotalWatches').textContent = watchLog.length;
+            const allTimeAvgRating = calculateAverage(watchedListData, 'vote_average', true);
+            const allTimeAvgPop = calculateAverage(watchedListData, 'popularity');
+            document.getElementById('statAllTimeAvgRating').textContent = allTimeAvgRating.avg.toFixed(1);
+            document.getElementById('statAllTimeAvgPop').textContent = Math.round(allTimeAvgPop.avg);
+        };
+
+        const updateDashboardStatus = () => {
+            const currentYear = new Date().getFullYear();
+            const goal = 31;
+            let goalCompletedThisYear = JSON.parse(localStorage.getItem('goalCompleted' + currentYear)) || false;
+            const watchedThisYearCount = watchLog.filter(log => log.year === currentYear).length;
+            const percentage = (watchedThisYearCount / goal) * 100;
+            if (watchedThisYearCount >= goal && !goalCompletedThisYear) {
+                goalModal.style.display = 'block';
+                localStorage.setItem('goalCompleted' + currentYear, JSON.stringify(true));
+            }
+            progressBar.style.width = `${Math.min(percentage, 100)}%`;
+            if (percentage >= 100) {
+                progressBar.classList.add('overdrive');
+                progressText.textContent = `Goal Met! You're at ${Math.round(percentage)}% of your goal!`;
+            } else {
+                progressBar.classList.remove('overdrive');
+                progressText.textContent = `${watchedThisYearCount} / ${goal} Movies Watched This Year`;
+            }
+        };
+
+        const updateNewBloodChallenge = () => {
+            const uniqueMovies = new Set(watchLog.map(log => log.movieId));
+            const count = uniqueMovies.size;
+            const goal = 10;
+            newBloodText.textContent = `${Math.min(count, goal)} / ${goal} First-Time Watches`;
+            newBloodTracker.innerHTML = '';
+            for (let i = 1; i <= goal; i++) {
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-vial';
+                icon.classList.toggle('text-red-600', i <= count);
+                icon.classList.toggle('text-gray-700', i > count);
+                newBloodTracker.appendChild(icon);
+            }
+        };
+        
+        const setupSkullRating = (movieId, modal) => {
+            const skulls = modal.querySelectorAll('.skull-rating .fa-skull');
+            const currentRating = personalRatings[movieId] || 0;
+            const updateSkulls = (rating) => {
+                skulls.forEach(skull => {
+                    skull.classList.toggle('rated', parseInt(skull.dataset.value) <= rating);
+                });
+            };
+            skulls.forEach(skull => {
+                skull.onmouseover = () => {
+                    const rating = parseInt(skull.dataset.value);
+                    skulls.forEach(s => s.classList.toggle('hover-rated', parseInt(s.dataset.value) <= rating));
+                };
+                skull.onmouseout = () => skulls.forEach(s => s.classList.remove('hover-rated'));
+                skull.onclick = () => {
+                    personalRatings[movieId] = parseInt(skull.dataset.value);
+                    saveLists();
+                    updateSkulls(personalRatings[movieId]);
+                    renderLists();
+                };
+            });
+            updateSkulls(currentRating);
+        };
+        
+        const getPersonalRatingHTML = (movieId) => {
+            const rating = personalRatings[movieId] || 0;
+            if (rating === 0) return '';
+            let skulls = '';
+            for (let i = 1; i <= 10; i++) {
+                skulls += `<i class="fas fa-skull text-xs ${i <= rating ? 'text-amber-500' : 'text-gray-600'}"></i>`;
+            }
+            return `<div class="mt-1">${skulls}</div>`;
+        };
+
+        const displayMovies = (movies, container, listType) => {
+            container.innerHTML = '';
+            if (movies.length === 0) {
+                if (container === searchResults) container.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The shadows hide your query... Nothing was found.</p>';
+                return;
+            }
+            movies.forEach(movie => {
+                const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                const movieElement = document.createElement('div');
+                movieElement.className = 'movie-card rounded-lg p-4 flex flex-col shadow-lg border border-gray-800 bg-secondary';
+                let buttons = '';
+                if (listType === 'watch') buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow" onclick="markAsWatched(${movie.id})">Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watch', ${movie.id})">Remove</button>`;
+                else if (listType === 'watched') buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromList('watched', ${movie.id})">Remove</button>`;
+                else { const isMovieInWatchList = watchListData.some(m => m.id === movie.id); buttons = `<div class="space-y-2"><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow ${isMovieInWatchList ? 'opacity-50 cursor-not-allowed' : ''}" onclick="addToWatchList('${movieString}')" ${isMovieInWatchList ? 'disabled' : ''}><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-check mr-2"></i> Mark as Watched</button></div>${isMovieInWatchList ? '<p class="text-center text-blue-400 mt-2">In Watch List</p>' : ''}${watchedListData.some(m => m.id === movie.id) ? '<p class="text-center text-green-400 mt-2">Already Watched</p>' : ''}`; }
+                const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+                movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" onclick="openDetailModal('${movieString}')"><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.id) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
+                container.appendChild(movieElement);
+            });
+        };
+        
+        const renderRewatchStats = () => {
+            rewatchStatsContainer.innerHTML = '';
+            if (watchedListData.length === 0) { rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No souls claimed yet...</p>'; return; }
+            const watchCounts = watchLog.reduce((acc, log) => { acc[log.movieId] = (acc[log.movieId] || 0) + 1; return acc; }, {});
+            let sortedMovies;
+            if (currentRewatchSort === 'watches') sortedMovies = [...watchedListData].sort((a, b) => (watchCounts[b.id] || 0) - (watchCounts[a.id] || 0));
+            else sortedMovies = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
+            sortedMovies.forEach(movie => {
+                const count = watchCounts[movie.id] || 0;
+                if(count === 0) return;
+                const statEl = document.createElement('div');
+                statEl.className = 'flex items-center border border-gray-800 p-3 rounded-lg bg-secondary';
+                statEl.innerHTML = `<img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/80x120/991b1b/white?text=N/A'}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p></div>`;
+                rewatchStatsContainer.appendChild(statEl);
+            });
+        };
+        
+        const renderYearlyBreakdown = () => {
+            const yearlyButtonsContainer = document.getElementById('yearlyButtonsContainer');
+            const yearlyMoviesContainer = document.getElementById('yearlyMoviesContainer');
+            yearlyButtonsContainer.innerHTML = '';
+            yearlyMoviesContainer.innerHTML = '';
+            
+            const years = [...new Set(watchLog.map(log => log.year))].sort((a, b) => b - a);
+            if (years.length === 0) return;
+
+            years.forEach(year => {
+                const button = document.createElement('button');
+                button.textContent = year;
+                button.className = 'px-3 py-1 bg-secondary rounded-md text-gray-400 hover:bg-red-800 hover:text-white transition-colors';
+                button.dataset.year = year;
+                yearlyButtonsContainer.appendChild(button);
+            });
+
+            const displayMoviesForYear = (year) => {
+                yearlyMoviesContainer.innerHTML = '';
+                const movieIdsForYear = new Set(watchLog.filter(log => log.year == year).map(log => log.movieId));
+                const moviesForYear = [...movieIdsForYear].map(id => watchedListData.find(movie => movie.id === id)).filter(Boolean);
+
+                if (moviesForYear.length === 0) { yearlyMoviesContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">No movies logged for this year.</p>'; return; }
+
+                moviesForYear.forEach(movie => {
+                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
+                    const movieEl = document.createElement('div');
+                    movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg';
+                    movieEl.innerHTML = `
+                        <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mr-4 object-cover">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-red-600">${movie.title}</h4>
+                            <p class="text-sm text-gray-400">${movie.director || 'Unknown Director'}</p>
+                        </div>
+                        <div class="text-right">
+                            ${getPersonalRatingHTML(movie.id)}
+                        </div>
+                    `;
+                    yearlyMoviesContainer.appendChild(movieEl);
+                });
+            };
+
+            yearlyButtonsContainer.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const year = e.target.dataset.year;
+                    yearlyButtonsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('bg-red-800', 'text-white'));
+                    e.target.classList.add('bg-red-800', 'text-white');
+                    displayMoviesForYear(year);
+                }
+            });
+
+            if (yearlyButtonsContainer.firstChild) yearlyButtonsContainer.firstChild.click();
+        };
+
+        const renderAdvancedCharts = () => {
+            const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'];
+            if (directorsChartInstance) directorsChartInstance.destroy();
+            if (genresChartInstance) genresChartInstance.destroy();
+            const directorCounts = watchedListData.reduce((acc, movie) => { if(movie.director) acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
+            const sortedDirectors = Object.entries(directorCounts).sort(([,a],[,b]) => b-a).slice(0, 10);
+            directorsChartInstance = new Chart(document.getElementById('directorsChart'), { type: 'bar', data: { labels: sortedDirectors.map(d => d[0]), datasets: [{ label: '# of Movies Watched', data: sortedDirectors.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { ticks: { color: '#a1a1aa' }}, y: { ticks: { color: '#a1a1aa' }} }, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
+            
+            const decadeCounts = watchedListData.reduce((acc, movie) => {
+                if (movie.release_date) {
+                    const year = parseInt(movie.release_date.substring(0, 4));
+                    const decade = Math.floor(year / 10) * 10;
+                    const decadeLabel = `${decade}s`;
+                    acc[decadeLabel] = (acc[decadeLabel] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const sortedDecades = Object.entries(decadeCounts).sort((a,b) => b[1] - a[1]);
+            
+            genresChartInstance = new Chart(document.getElementById('genresChart'), { type: 'pie', data: { labels: sortedDecades.map(d => d[0]), datasets: [{ data: sortedDecades.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
+        };
+
+        const renderLists = () => {
+            const sortedWatchlist = [...watchListData].sort((a, b) => a.title.localeCompare(b.title));
+            displayMovies(sortedWatchlist, watchListContainer, 'watch');
+            let sortedWatchedlist;
+            if (currentWatchedlistSort === 'recent') sortedWatchedlist = [...watchedListData].reverse();
+            else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
+            displayMovies(sortedWatchedlist, watchedListContainer, 'watched');
+            renderRewatchStats();
+            renderYearlyBreakdown();
+            if (watchListData.length === 0) watchListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The Viewing Room is empty. Summon some victims...</p>';
+            if (watchedListData.length === 0) watchedListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">Your body count is zero. Time to get to work.</p>';
+            updateDashboardStatus(); renderDashboardStats(); updateAllTimeStats(); renderAdvancedCharts(); updateNewBloodChallenge();
+        };
+
+        // List Management
+        const addToWatchList = movieString => {
+            const movie = JSON.parse(decodeURIComponent(movieString));
+            if (watchListData.some(m => m.id === movie.id)) { showModal(movie.title, 'alreadyExists'); return; }
+            watchListData.push(movie);
+            saveLists(); renderLists(); showModal(movie.title, 'addWatchlist'); handleLiveSearch(searchInput.value);
+        };
+        const addToWatchedList = async movieString => {
+            const movie = JSON.parse(decodeURIComponent(movieString));
+            let movieInList = watchedListData.find(m => m.id === movie.id);
+            if (!movieInList) {
+                 const fullDetails = await fetchMovieById(movie.id);
+                 movie.director = fullDetails.director;
+                 watchedListData.push(movie);
+                 movieInList = movie;
+            }
+            const watchListIndex = watchListData.findIndex(m => m.id === movie.id);
+            if (watchListIndex > -1) watchListData.splice(watchListIndex, 1);
+            watchLog.push({ movieId: movie.id, year: new Date().getFullYear() });
+            saveLists(); renderLists(); openRatingModal(movieInList); handleLiveSearch(searchInput.value);
+        };
+        const markAsWatched = async movieId => {
+            const movieIndex = watchListData.findIndex(m => m.id === movieId);
+            if (movieIndex > -1) {
+                const [movie] = watchListData.splice(movieIndex, 1);
+                let movieInList = watchedListData.find(m => m.id === movie.id);
+                if (!movieInList) {
+                    if (!movie.director) {
+                        const fullDetails = await fetchMovieById(movie.id);
+                        movie.director = fullDetails.director;
+                    }
+                    watchedListData.push(movie);
+                    movieInList = movie;
+                }
+                watchLog.push({ movieId: movie.id, year: new Date().getFullYear() });
+                saveLists(); renderLists(); openRatingModal(movieInList);
+            }
+        };
+        const removeFromList = (listType, movieId) => {
+            let movieTitle = '';
+            if (listType === 'watch') {
+                const index = watchListData.findIndex(m => m.id === movieId);
+                if (index > -1) { movieTitle = watchListData[index].title; watchListData.splice(index, 1); showModal(movieTitle, 'removedWatchlist'); }
+            } else {
+                const index = watchedListData.findIndex(m => m.id === movieId);
+                if (index > -1) { movieTitle = watchedListData[index].title; watchedListData.splice(index, 1); watchLog = watchLog.filter(log => log.movieId !== movieId); showModal(movieTitle, 'removedWatched'); }
+            }
+            saveLists(); renderLists(); if (searchInput.value) handleLiveSearch(searchInput.value);
+        };
+        
+        // Live Search
+        const displayLiveResults = movies => {
+            liveSearchResults.innerHTML = '';
+            if (movies.length === 0) { liveSearchResults.classList.add('hidden'); return; }
+            movies.forEach(movie => {
+                const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                const resultEl = document.createElement('div');
+                resultEl.className = 'p-2 hover:bg-gray-700 flex items-center space-x-3';
+                resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" onclick="openDetailModal('${movieString}')"><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" onclick="addToWatchList('${movieString}')" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
+                liveSearchResults.appendChild(resultEl);
+            });
+            const seeMoreEl = document.createElement('button');
+            seeMoreEl.className = 'w-full text-center p-2 bg-red-800 hover:bg-red-900 font-bold text-sm btn-glow';
+            seeMoreEl.textContent = 'See More Results...';
+            seeMoreEl.onclick = () => searchMovies(searchInput.value.trim());
+            liveSearchResults.appendChild(seeMoreEl);
+            liveSearchResults.classList.remove('hidden');
+        };
+
+        const debounce = (func, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); }; };
+        const handleLiveSearch = debounce(async (query) => {
+            if (query.trim().length < 2) { liveSearchResults.classList.add('hidden'); return; }
+            const { movies } = await fetchHorrorMovies(query);
+            if (movies) displayLiveResults(movies.slice(0, 10));
+        }, 300);
+        
+        async function searchMovies(query) {
+            liveSearchResults.classList.add('hidden');
+            searchResults.innerHTML = '';
+            const { movies, error } = await fetchHorrorMovies(query);
+            if (error) searchResults.innerHTML = `<p class="text-yellow-400 col-span-full text-center">${error}</p>`;
+            else displayMovies(movies, searchResults, 'search');
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('click', e => { 
+            if (e.target == messageModal) closeMessageModal(); 
+            if (e.target == movieDetailModal) closeDetailModal(); 
+            if (e.target == goalModal) closeGoalModal(); 
+            if (e.target == ratingModal) closeRatingModal();
+            if (!e.target.closest('.sort-dropdown')) {
+                document.querySelectorAll('.sort-menu').forEach(menu => menu.classList.add('hidden'));
+            }
+        });
+
+        document.addEventListener('click', e => { if (!searchContainer.contains(e.target)) liveSearchResults.classList.add('hidden'); });
+        
+        tabs.forEach(tab => tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            tabContents.forEach(c => c.classList.toggle('active', c.id === target));
+        }));
+        
+        sortDropdowns.forEach(dropdown => {
+            const btn = dropdown.querySelector('.sort-btn');
+            const menu = dropdown.querySelector('.sort-menu');
+            const label = dropdown.querySelector('.sort-label');
+            btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+            menu.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (e.target.tagName === 'A') {
+                    const sortValue = e.target.dataset.sort;
+                    label.textContent = e.target.textContent;
+                    switch (dropdown.id) {
+                        case 'sortWatchlist': currentWatchlistSort = sortValue; break;
+                        case 'sortWatchedlist': currentWatchedlistSort = sortValue; break;
+                        case 'sortRewatch': currentRewatchSort = sortValue; break;
+                    }
+                    renderLists();
+                    menu.classList.add('hidden');
+                }
+            });
+        });
+
+        searchInput.addEventListener('input', e => handleLiveSearch(e.target.value));
+        searchInput.addEventListener('keypress', e => { if (e.key === 'Enter') searchMovies(searchInput.value.trim()); });
+        searchButton.addEventListener('click', () => searchMovies(searchInput.value.trim()));
+        
+        surpriseBtn.addEventListener('click', () => {
+            if (watchListData.length === 0) { showModal("The Box is empty! Add movies to your watchlist to summon a surprise."); return; }
+            const randomIndex = Math.floor(Math.random() * watchListData.length);
+            const surpriseMovie = watchListData[randomIndex];
+            const movieString = encodeURIComponent(JSON.stringify(surpriseMovie));
+            openDetailModal(movieString);
+        });
+        
+        toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
+        toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstTab = document.querySelector('.tab-link');
+            const firstTabContent = document.getElementById(firstTab.dataset.tab);
+            firstTab.classList.add('active');
+            if (firstTabContent) firstTabContent.classList.add('active');
+            renderLists();
+        });
+    </script>
+</body>
+</html>
+
