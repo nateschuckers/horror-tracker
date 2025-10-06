@@ -271,12 +271,11 @@
             // #####################################################################
             // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
             // #####################################################################
-            const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.com'; 
+            const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
             // #####################################################################
             
-            const { createClient } = supabase;
-            const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
             // DOM Elements
             const loader = document.getElementById('loader');
@@ -726,7 +725,7 @@
                 displayMovies(sortedWatchlist, watchListContainer, 'watch');
                 let sortedWatchedlist;
                 if (currentWatchedlistSort === 'recent') {
-                    const watchedIdsOrder = watchLog.map(l => l.movie_id).reverse();
+                    const watchedIdsOrder = watchLog.sort((a, b) => new Date(b.watched_at) - new Date(a.watched_at)).map(l => l.movie_id);
                     sortedWatchedlist = [...new Set(watchedIdsOrder)].map(id => watchedListData.find(m => m.id === id)).filter(Boolean);
                 }
                 else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
@@ -868,7 +867,6 @@
             toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
             toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
 
-            
             const firstTab = document.querySelector('.tab-link');
             const firstTabContent = document.getElementById(firstTab.dataset.tab);
             firstTab.classList.add('active');
