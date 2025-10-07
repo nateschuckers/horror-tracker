@@ -267,17 +267,31 @@
                 <div id="personalRatingSection" class="my-6"> <p class="text-sm text-gray-500 mb-2">MY RATING</p> <div class="skull-rating text-lg md:text-xl flex flex-wrap"> <i class="fas fa-skull p-1" data-value="1"></i><i class="fas fa-skull p-1" data-value="2"></i><i class="fas fa-skull p-1" data-value="3"></i><i class="fas fa-skull p-1" data-value="4"></i><i class="fas fa-skull p-1" data-value="5"></i><i class="fas fa-skull p-1" data-value="6"></i><i class="fas fa-skull p-1" data-value="7"></i><i class="fas fa-skull p-1" data-value="8"></i><i class="fas fa-skull p-1" data-value="9"></i><i class="fas fa-skull p-1" data-value="10"></i> </div> </div> <h3 class="text-xl font-bold text-gray-300 mt-6 mb-2">Overview</h3> <p id="modalOverview" class="text-gray-400 mb-6">Movie overview goes here...</p> <div id="modalButtons" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-6"></div> </div> </div> </div> </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // #####################################################################
-            // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
-            // #  (Make sure they are inside the single quotes '')                 #
-            // #####################################################################
-                const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
-            // #####################################################################
-            
-            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // #####################################################################
+        // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
+        // #  (Make sure they are inside the single quotes '')                 #
+        // #####################################################################
+            const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
+        // #####################################################################
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
+        const HORROR_GENRE_ID = 27;
 
+        async function fetchMovieById(movieId) {
+            if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return null;
+            try {
+                const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits`);
+                if (!response.ok) return null;
+                const data = await response.json();
+                const director = data.credits.crew.find(person => person.job === 'Director');
+                data.director = director ? director.name : 'Unknown';
+                return data;
+            } catch (error) { console.error(`Error fetching movie ${movieId}:`, error); return null; }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
             const loader = document.getElementById('loader');
             const surpriseBtn = document.getElementById('surpriseBtn');
@@ -304,10 +318,6 @@
             
             // Chart instances
             let directorsChartInstance, genresChartInstance;
-
-            // TMDB Config
-            const tmdbApiKey = '5f3d6ad0da1f214d0b8ee808aa77a4a8'; 
-            const HORROR_GENRE_ID = 27;
             
             // App State (will be populated from Supabase)
             let watchListData = [];
@@ -461,17 +471,6 @@
                     loader.style.display = 'none';
                     return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
                 } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
-            };
-            const fetchMovieById = async movieId => {
-                if (tmdbApiKey === 'YOUR_TMDB_API_KEY_HERE') return null;
-                try {
-                    const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${tmdbApiKey}&append_to_response=credits`);
-                    if (!response.ok) return null;
-                    const data = await response.json();
-                    const director = data.credits.crew.find(person => person.job === 'Director');
-                    data.director = director ? director.name : 'Unknown';
-                    return data;
-                } catch (error) { console.error(`Error fetching movie ${movieId}:`, error); return null; }
             };
 
             // Main App Logic & Rendering
@@ -848,6 +847,7 @@
             document.body.addEventListener('click', e => { 
                 const target = e.target.closest('[data-action]');
                 if (target) {
+                    e.stopPropagation();
                     const action = target.dataset.action;
                     const movieId = target.dataset.movieId;
                     const movieString = target.dataset.movieString;
@@ -863,7 +863,9 @@
                     if (action === 'closeRatingModal') closeRatingModal();
                     if (action === 'closeDetailModal') closeDetailModal();
                 }
+            });
 
+            window.addEventListener('click', e => { 
                 if (e.target == messageModal) closeMessageModal(); 
                 if (e.target == movieDetailModal) closeDetailModal(); 
                 if (e.target == goalModal) closeGoalModal(); 
