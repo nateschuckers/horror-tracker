@@ -383,6 +383,7 @@
             let currentWatchedlistSort = 'recent';
             let currentRewatchSort = 'watches';
             let dashboardStatView = 'watched';
+            let isRewatchExpanded = false;
             
             // Utility Functions
             const formatCurrency = (amount) => {
@@ -509,7 +510,7 @@
                 const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
                 let buttons = '';
                 if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
-                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="markAsWatched" data-movie-id="${movie.id}"> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="removeFromWatchlist" data-movie-id="${movie.id}">Remove from Watchlist</button>`;
+                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="markAsWatched" data-movie-string='${movieString}'> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="removeFromWatchlist" data-movie-id="${movie.id}">Remove from Watchlist</button>`;
                 else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchList" data-movie-string='${movieString}'><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchedList" data-movie-string='${movieString}'><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
                 modalButtons.innerHTML = buttons;
 
@@ -554,7 +555,9 @@
                     const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(query)}`);
                     const data = await response.json();
                     loader.style.display = 'none';
-                    return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
+                    const filteredMovies = data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [];
+                    filteredMovies.sort((a, b) => b.popularity - a.popularity);
+                    return { movies: filteredMovies };
                 } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
             };
             
@@ -623,16 +626,30 @@
             };
 
             const updateNewBloodChallenge = () => {
-                const uniqueMovies = new Set(watchLog.map(log => log.movie_id));
-                const count = uniqueMovies.size;
+                const currentYear = new Date().getFullYear();
+                const previousWatches = new Set(watchLog
+                    .filter(log => new Date(log.watched_at).getFullYear() < currentYear)
+                    .map(log => log.movie_id));
+                
+                const currentYearUniqueWatches = new Set(watchLog
+                    .filter(log => new Date(log.watched_at).getFullYear() === currentYear)
+                    .map(log => log.movie_id));
+
+                let newBloodCount = 0;
+                currentYearUniqueWatches.forEach(movieId => {
+                    if (!previousWatches.has(movieId)) {
+                        newBloodCount++;
+                    }
+                });
+
                 const goal = 10;
-                newBloodText.textContent = `${Math.min(count, goal)} / ${goal} First-Time Watches`;
+                newBloodText.textContent = `${Math.min(newBloodCount, goal)} / ${goal} First-Time Watches This Year`;
                 newBloodTracker.innerHTML = '';
                 for (let i = 1; i <= goal; i++) {
                     const icon = document.createElement('i');
                     icon.className = 'fas fa-vial';
-                    icon.classList.toggle('text-red-600', i <= count);
-                    icon.classList.toggle('text-gray-700', i > count);
+                    icon.classList.toggle('text-red-600', i <= newBloodCount);
+                    icon.classList.toggle('text-gray-700', i > newBloodCount);
                     newBloodTracker.appendChild(icon);
                 }
             };
@@ -721,19 +738,49 @@
             
             const renderRewatchStats = () => {
                 rewatchStatsContainer.innerHTML = '';
-                if (watchedListData.length === 0) { rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No souls claimed yet...</p>'; return; }
-                const watchCounts = watchLog.reduce((acc, log) => { acc[log.movie_id] = (acc[log.movie_id] || 0) + 1; return acc; }, {});
-                let sortedMovies;
-                if (currentRewatchSort === 'watches') sortedMovies = [...watchedListData].sort((a, b) => (watchCounts[b.id] || 0) - (watchCounts[a.id] || 0));
-                else sortedMovies = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
-                sortedMovies.forEach(movie => {
+                if (watchedListData.length === 0) {
+                    rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No souls claimed yet...</p>';
+                    return;
+                }
+                const watchCounts = watchLog.reduce((acc, log) => {
+                    acc[log.movie_id] = (acc[log.movie_id] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const rewatchableMovies = [...watchedListData].filter(movie => (watchCounts[movie.id] || 0) > 1);
+
+                if (currentRewatchSort === 'watches') {
+                    rewatchableMovies.sort((a, b) => (watchCounts[b.id] || 0) - (watchCounts[a.id] || 0));
+                } else {
+                    rewatchableMovies.sort((a, b) => a.title.localeCompare(b.title));
+                }
+                
+                if (rewatchableMovies.length === 0) {
+                    rewatchStatsContainer.innerHTML = '<p class="text-gray-500 text-center italic">No movies have been re-watched yet.</p>';
+                    return;
+                }
+
+                const limit = isRewatchExpanded ? 25 : 10;
+                const moviesToShow = rewatchableMovies.slice(0, limit);
+
+                moviesToShow.forEach(movie => {
                     const count = watchCounts[movie.id] || 0;
-                    if(count === 0) return;
                     const statEl = document.createElement('div');
                     statEl.className = 'flex items-center border border-gray-800 p-3 rounded-lg bg-secondary';
                     statEl.innerHTML = `<img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/80x120/991b1b/white?text=N/A'}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p></div>`;
                     rewatchStatsContainer.appendChild(statEl);
                 });
+
+                if (rewatchableMovies.length > 10) {
+                    const seeMoreBtn = document.createElement('button');
+                    seeMoreBtn.textContent = isRewatchExpanded ? 'See Less' : `See Top 25`;
+                    seeMoreBtn.className = 'w-full text-center p-2 bg-red-800 hover:bg-red-900 font-bold text-sm btn-glow mt-4 rounded-md';
+                    seeMoreBtn.onclick = () => {
+                        isRewatchExpanded = !isRewatchExpanded;
+                        renderRewatchStats();
+                    };
+                    rewatchStatsContainer.appendChild(seeMoreBtn);
+                }
             };
             
             const renderYearlyBreakdown = () => {
@@ -757,6 +804,8 @@
                     yearlyMoviesContainer.innerHTML = '';
                     const movieIdsForYear = new Set(watchLog.filter(log => new Date(log.watched_at).getFullYear() == year).map(log => log.movie_id));
                     const moviesForYear = [...movieIdsForYear].map(id => watchedListData.find(movie => movie.id === id)).filter(Boolean);
+                    
+                    moviesForYear.sort((a, b) => a.title.localeCompare(b.title));
 
                     if (moviesForYear.length === 0) { yearlyMoviesContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">No movies logged for this year.</p>'; return; }
 
