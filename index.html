@@ -267,19 +267,6 @@
                 <div id="personalRatingSection" class="my-6"> <p class="text-sm text-gray-500 mb-2">MY RATING</p> <div class="skull-rating text-lg md:text-xl flex flex-wrap"> <i class="fas fa-skull p-1" data-value="1"></i><i class="fas fa-skull p-1" data-value="2"></i><i class="fas fa-skull p-1" data-value="3"></i><i class="fas fa-skull p-1" data-value="4"></i><i class="fas fa-skull p-1" data-value="5"></i><i class="fas fa-skull p-1" data-value="6"></i><i class="fas fa-skull p-1" data-value="7"></i><i class="fas fa-skull p-1" data-value="8"></i><i class="fas fa-skull p-1" data-value="9"></i><i class="fas fa-skull p-1" data-value="10"></i> </div> </div> <h3 class="text-xl font-bold text-gray-300 mt-6 mb-2">Overview</h3> <p id="modalOverview" class="text-gray-400 mb-6">Movie overview goes here...</p> <div id="modalButtons" class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mb-6"></div> </div> </div> </div> </div>
 
     <script>
-        // These functions need to be global for the inline `onclick` attributes to find them.
-        function closeMessageModal() { document.getElementById('messageModal').style.display = 'none'; }
-        function closeGoalModal() { document.getElementById('goalModal').style.display = 'none'; }
-        function closeRatingModal() { document.getElementById('ratingModal').style.display = 'none'; }
-        function closeDetailModal() { 
-            const movieDetailModal = document.getElementById('movieDetailModal');
-            movieDetailModal.style.display = 'none';
-            const modalContent = movieDetailModal.querySelector('.modal-content');
-            const modalTitle = document.getElementById('modalTitle');
-            modalContent.style.borderColor = '#4b5563';
-            modalTitle.style.color = '#ef4444';
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             // #####################################################################
             // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
@@ -388,7 +375,7 @@
                 ratingModal.style.display = 'block';
             };
 
-            window.openDetailModal = async (movieString) => {
+            const openDetailModal = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 const modalContent = movieDetailModal.querySelector('.modal-content');
                 const modalTitle = document.getElementById('modalTitle');
@@ -414,7 +401,6 @@
                 document.getElementById('modalPopularityContainer').className = 'text-2xl font-bold ' + getPopularityColor(movie.popularity);
                 document.getElementById('modalOverview').textContent = movie.overview || 'No overview available.';
                 document.getElementById('tmdbLink').href = `https://www.themoviedb.org/movie/${movie.id}`;
-                const movieStringForEvent = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
                 
                 const isMovieInWatchedList = watchedListData.some(m => m.id === movie.id);
                 document.getElementById('personalRatingSection').style.display = isMovieInWatchedList ? 'block' : 'none';
@@ -424,8 +410,8 @@
                 const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
                 let buttons = '';
                 if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
-                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="removeFromWatchlist(${movie.id}); closeDetailModal();">Remove from Watchlist</button>`;
-                else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" onclick="addToWatchedList('${movieStringForEvent}'); closeDetailModal();"><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
+                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchedList" data-movie-string='${movieString}'> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="removeFromWatchlist" data-movie-id="${movie.id}">Remove from Watchlist</button>`;
+                else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchList" data-movie-string='${movieString}'><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchedList" data-movie-string='${movieString}'><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
                 modalButtons.innerHTML = buttons;
 
                 const modalBudget = document.getElementById('modalBudget');
@@ -763,7 +749,7 @@
             };
 
             // List Management
-            window.addToWatchList = async (movieString) => {
+            const addToWatchList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 // Add to movies table first to ensure it exists
                 await _supabase.from('movies').upsert({ id: movie.id, ...movie }, { onConflict: 'id' });
@@ -772,7 +758,7 @@
                 loadInitialData();
                 showModal(movie.title, 'addWatchlist');
             };
-            window.addToWatchedList = async (movieString) => {
+            const addToWatchedList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 const fullDetails = await fetchMovieById(movie.id);
                 await _supabase.from('movies').upsert({ id: movie.id, director: fullDetails.director, ...movie }, { onConflict: 'id' });
@@ -781,20 +767,20 @@
                 loadInitialData();
                 openRatingModal(movie);
             };
-            window.markAsWatched = async (movieId) => {
+            const markAsWatched = async (movieId) => {
                 const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watch_log').insert({ movie_id: movieId, watched_at: new Date().toISOString() });
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
                 loadInitialData();
                 openRatingModal(movie);
             };
-            window.removeFromWatchlist = async (movieId) => {
+            const removeFromWatchlist = async (movieId) => {
                  const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
                 loadInitialData();
                 showModal(movie.title, 'removedWatchlist');
             };
-            window.removeFromWatched = async (movieId) => {
+            const removeFromWatched = async (movieId) => {
                 const movie = watchedListData.find(m => m.id === movieId);
                 await _supabase.from('watch_log').delete().eq('movie_id', movieId);
                  await _supabase.from('movies').update({ personal_rating: null }).eq('id', movieId);
@@ -810,7 +796,7 @@
                     const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
                     const resultEl = document.createElement('div');
                     resultEl.className = 'p-2 hover:bg-gray-700 flex items-center space-x-3';
-                    resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" onclick="openDetailModal('${movieString}')"><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" onclick="addToWatchList('${movieString}')" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow" onclick="addToWatchedList('${movieString}')"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
+                    resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" data-action="openDetailModal" data-movie-string='${movieString}'><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" data-action="addToWatchList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" data-action="addToWatchedList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
                     liveSearchResults.appendChild(resultEl);
                 });
                 const seeMoreEl = document.createElement('button');
@@ -838,6 +824,20 @@
 
             // --- EVENT LISTENERS ---
             window.addEventListener('click', e => { 
+                const target = e.target.closest('[data-action]');
+                if (target) {
+                    const action = target.dataset.action;
+                    const movieId = target.dataset.movieId;
+                    const movieString = target.dataset.movieString;
+
+                    if (action === 'openDetailModal') openDetailModal(movieString);
+                    if (action === 'addToWatchList') addToWatchList(movieString);
+                    if (action === 'addToWatchedList') addToWatchedList(movieString);
+                    if (action === 'markAsWatched') markAsWatched(parseInt(movieId));
+                    if (action === 'removeFromWatchlist') removeFromWatchlist(parseInt(movieId));
+                    if (action === 'removeFromWatched') removeFromWatched(parseInt(movieId));
+                }
+
                 if (e.target.closest('.close-button')) closeDetailModal();
                 if (e.target == messageModal) closeMessageModal(); 
                 if (e.target == movieDetailModal) closeDetailModal(); 
