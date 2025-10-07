@@ -739,10 +739,14 @@
 
                 const { data: watchlistData, error: watchlistError } = await _supabase.from('watchlist').select('*, movies(*)');
                 if (watchlistError) { console.error("Error fetching watchlist:", watchlistError); return; }
+                
+                const allMovies = moviesData || [];
+                const allLogs = watchLogData || [];
+                const allWatchlist = watchlistData || [];
 
-                watchedListData = moviesData.filter(movie => watchLogData.some(log => log.movie_id === movie.id));
-                watchListData = watchlistData.map(item => item.movies);
-                watchLog = watchLogData.map(log => ({ ...log, year: new Date(log.watched_at).getFullYear() }));
+                watchedListData = allMovies.filter(movie => allLogs.some(log => log.movie_id === movie.id));
+                watchListData = allWatchlist.map(item => item.movies).filter(Boolean);
+                watchLog = allLogs.map(log => ({ ...log, year: new Date(log.watched_at).getFullYear() }));
                 
                 renderLists();
             }
@@ -768,9 +772,11 @@
             const addToWatchList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity };
-                await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
-                await _supabase.from('watchlist').insert({ movie_id: movie.id });
-                loadInitialData();
+                const { error: movieError } = await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
+                if(movieError) { console.error("Error upserting movie:", movieError); return; }
+                const { error: watchlistError } = await _supabase.from('watchlist').insert({ movie_id: movie.id });
+                if(watchlistError) { console.error("Error adding to watchlist:", watchlistError); return; }
+                await loadInitialData();
                 showModal(movie.title, 'addWatchlist');
             };
             const addToWatchedList = async (movieString) => {
@@ -780,27 +786,27 @@
                 await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
                 await _supabase.from('watch_log').insert({ movie_id: movie.id, watched_at: new Date().toISOString() });
                 await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
-                loadInitialData();
+                await loadInitialData();
                 openRatingModal(movie);
             };
             const markAsWatched = async (movieId) => {
                 const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watch_log').insert({ movie_id: movieId, watched_at: new Date().toISOString() });
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
-                loadInitialData();
+                await loadInitialData();
                 openRatingModal(movie);
             };
             const removeFromWatchlist = async (movieId) => {
                  const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
-                loadInitialData();
+                await loadInitialData();
                 showModal(movie.title, 'removedWatchlist');
             };
             const removeFromWatched = async (movieId) => {
                 const movie = watchedListData.find(m => m.id === movieId);
                 await _supabase.from('watch_log').delete().eq('movie_id', movieId);
                  await _supabase.from('movies').update({ personal_rating: null }).eq('id', movieId);
-                loadInitialData();
+                await loadInitialData();
                 showModal(movie.title, 'removedWatched');
             };
             
@@ -839,7 +845,7 @@
             }
 
             // --- EVENT LISTENERS ---
-            window.addEventListener('click', e => { 
+            document.body.addEventListener('click', e => { 
                 const target = e.target.closest('[data-action]');
                 if (target) {
                     const action = target.dataset.action;
