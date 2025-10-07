@@ -109,7 +109,7 @@
         @keyframes staticFlicker { 0%, 100% { opacity: 0.04; } 50% { opacity: 0.08; } }
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVQTFRFAAAAAAAAEBAQICAwMDBAQEBAgICAgICAwMDAw/aOAAAACHRSTlMAAQkfLS9OU1hsc3yGj5SZp8HDzNXm8/X+3RXcAgAAARNJREFUeNqslFsKgzAMQ+2s2dX///2t20w6KQu8OEeRecWpa1gxb4lJpsU60lWdYqlBNU1e1Y0KkK5SNQ21rCqCVVXBKOoqISw5w8so1jFiChWUcSgrBfL/wZ0aUqhe1AOkA3X1o/aAHkAFiBpAB4gO4gK4AC4gG4gOxgfygZwA84E84Hwga/gI/gIeYQjxgGfGQ8wgvsRE4jGWGK/xwjgR1seRrkS5EhdRn8hBvEa5GuRLp1O+xbdW69WruW3duo29G2/Uj/tV/T6/ot/D7/Ff/vH/Jn/WP/mH/Cn/RD/pT/pB/wE/4D/4h/wB/4A/4A/4A/4BfwFP2U4z/AAAAAElFTSuQmCC');
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUEUgAAADIAAAAyBAMAAADsEZWCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVQTFRFAAAAAAAAEBAQICAwMDBAQEBAgICAgICAwMDAw/aOAAAACHRSTlMAAQkfLS9OU1hsc3yGj5SZp8HDzNXm8/X+3RXcAgAAARNJREFUeNqslFsKgzAMQ+2s2dX///2t20w6KQu8OEeRecWpa1gxb4lJpsU60lWdYqlBNU1e1Y0KkK5SNQ21rCqCVVXBKOoqISw5w8so1jFiChWUcSgrBfL/wZ0aUqhe1AOkA3X1o/aAHkAFiBpAB4gO4gK4AC4gG4gOxgfygZwA84E84Hwga/gI/gIeYQjxgGfGQ8wgvsRE4jGWGK/xwjgR1seRrkS5EhdRn8hBvEa5GuRLp1O+xbdW69WruW3duo29G2/Uj/tV/T6/ot/D7/Ff/vH/Jn/WP/mH/Cn/RD/pT/pB/wE/4D/4h/wB/4A/4A/4A/4BfwFP2U4z/AAAAAElFTSuQmCC');
             opacity: 0.05; z-index: 999; pointer-events: none; animation: staticFlicker 0.2s infinite;
         }
         
@@ -223,28 +223,34 @@
                 <!-- Search Results -->
                 <div id="searchResults" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div>
                 <div id="loader"> <svg width="100" height="100" viewBox="-2 -2 36 36" xmlns="http://www.w3.org/2000/svg" class="text-amber-500"><path fill="currentColor" d="M31.22 15.22a1 1 0 0 1-1 .94h-3.52a1 1 0 0 1 0-2h2.79c.33-2 .16-4-.47-5.91a1 1 0 0 1 .66-1.25l.3-.08a1 1 0 0 1 1.25.66c.8 2.33 1 4.75.49 7.14c.01 0 .01 0 0 .01a.97.97 0 0 1-.5.49Zm-7-11.45a1 1 0 0 1-1.25-.66c-.34-1-.77-1.96-1.28-2.88a1 1 0 0 1 .59-1.34l.35-.14a1 1 0 0 1 1.34.59c.58 1.05 1.05 2.14 1.41 3.25l.01-.01a1 1 0 0 1-.17 1.2Zm-8.47-2.7a1 1 0 0 1-1.34-.59c-.92-.38-1.87-.66-2.86-.83a1 1 0 0 1-.84-1.15l.04-.36a1 1 0 0 1 1.15-.84c1.15.2 2.27.52 3.32.95l.01 0a1 1 0 0 1 .52 1.82Zm-9.11 3.11a1 1 0 0 1-.52-1.82c.4-.17.8-.32 1.21-.46a1 1 0 0 1 .91 1.08v.37a1 1 0 0 1-1.08.91c-.48-.06-.95-.14-1.42-.23l-.01-.01ZM2 16.16h3.52a1 1 0 0 1 0 2H2.73c-.33 2-.16 4 .47 5.91a1 1 0 0 1-.66 1.25l-.3.08a1 1 0 0 1-1.25-.66c-.8-2.33-1-4.75-.49-7.14l0-.01a1 1 0 0 1 .5-.49Zm7 11.45a1 1 0 0 1 1.25.66c.34 1 .77 1.96 1.28 2.88a1 1 0 0 1-.59 1.34l-.35.14a1 1 0 0 1-1.34-.59c-.58-1.05-1.05-2.14-1.41-3.25l0 .01a1 1 0 0 1 .16-1.19ZM15.75 31a1 1 0 0 1 1.34.59c.92.38 1.87.66 2.86.83a1 1 0 0 1 .84 1.15l-.04.36a1 1 0 0 1-1.15.84c-1.15-.2-2.27-.52-3.32-.95l0 0a1 1 0 0 1-.53-1.82Zm9.11-3.11a1 1 0 0 1 .52 1.82c-.4.17-.8.32-1.21-.46a1 1 0 0 1-.91-1.08v-.37a1 1 0 0 1 1.08-.91c.48.06.95.14 1.42.23h.01ZM16 2a5 5 0 0 0-5 5v.5a.5.5 0 0 1-1 0V7a6 6 0 0 1 6-6a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H16Zm8.65 22.52a6.46 6.46 0 0 0-16.3 0a1.91 1.91 0 0 0 1.83 1.84h12.64a1.91 1.91 0 0 0 1.83-1.84Zm-14.82-.36a4.46 4.46 0 0 1 8.34 0ZM19 14a1 1 0 0 0-2 0a1 1 0 1 0-2 0a1 1 0 1 0-2 0a3 3 0 1 1 6 0Zm-1.28 4.2a1 1 0 0 0-1.44 1.4l.79.77l-1.07 1a1 1 0 0 0 1.38 1.44l1.07-1l.73.72a1 1 0 0 0 1.44-1.44l-.72-.73l1-1.07a1 1 0 0 0-1.44-1.38l-1 .92Z"/></svg></div>
-                <!-- Data Import Section (Temporary) -->
-                <div id="importer" class="mt-12 p-6 rounded-lg border-2 border-dashed border-gray-700 shadow-lg bg-secondary">
-                    <h3 class="text-xl font-bold text-center text-amber-500 mb-4 font-creepster tracking-wider">The Import Cauldron</h3>
-                    <p class="text-center text-gray-400 text-sm mb-4">For a one-time import of historical data from a CSV file.</p>
-                    <textarea id="csvInput" rows="8" class="w-full p-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Paste your CSV data here... (id,year)"></textarea>
-                    <button id="importBtn" class="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded transition duration-300 btn-glow">
-                        <i class="fas fa-magic mr-2"></i>Import History
-                    </button>
-                </div>
-                <!-- Danger Zone -->
-                <div id="dangerZone" class="mt-12 p-6 rounded-lg border-2 border-dashed border-red-900 shadow-lg bg-secondary">
-                    <h3 class="text-xl font-bold text-center text-red-500 mb-4 font-creepster tracking-wider">Danger Zone</h3>
-                    <p class="text-center text-gray-400 text-sm mb-4">These actions cannot be undone. Proceed with caution.</p>
-                    <button id="clearDataBtn" class="mt-4 w-full bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-6 rounded transition duration-300 btn-glow">
-                        <i class="fas fa-biohazard mr-2"></i>Clear All Watch History & Watchlist
-                    </button>
-                </div>
             </div>
             <!-- Other Tabs... -->
             <div id="watchlist" class="tab-content"> <div class="flex justify-between items-center mb-4 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-eye mr-2"></i>The Viewing Room</h2> <div id="sortWatchlist" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Title (A-Z)</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-4">We have such sights to show you.</h2> <div id="watchList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div> </div>
             <div id="watchedlist" class="tab-content"> <div class="flex justify-between items-center mb-4 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-skull-crossbones mr-2"></i>The Body Count</h2> <div id="sortWatchedlist" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Recent</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="recent">Most Recent</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-4">His name was Jason... and today is his birthday.</h2> <div id="watchedList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div> </div>
-            <div id="rewatchstats" class="tab-content"> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> </div> <div class="flex justify-between items-center mb-6 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</h2> <div id="sortRewatch" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <div id="rewatchStatsContainer" class="space-y-4"></div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> </div> <div class="mt-12"> <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-book-dead mr-2"></i>Annual Kill Count</h2> <div id="yearlyButtonsContainer" class="flex flex-wrap gap-2 mb-6"></div> <div id="yearlyMoviesContainer" class="space-y-3"></div> </div> </div>
+            <div id="rewatchstats" class="tab-content"> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> </div> <div class="flex justify-between items-center mb-6 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</h2> <div id="sortRewatch" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <div id="rewatchStatsContainer" class="space-y-4"></div> <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> </div> <div class="mt-12"> <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-book-dead mr-2"></i>Annual Kill Count</h2> <div id="yearlyButtonsContainer" class="flex flex-wrap gap-2 mb-6"></div> <div id="yearlyMoviesContainer" class="space-y-3"></div> </div>
+                <details class="mt-12 border-2 border-dashed border-gray-700 rounded-lg">
+                    <summary class="p-4 cursor-pointer text-lg font-bold text-amber-500 font-creepster tracking-wider text-center">Admin Controls</summary>
+                    <div class="p-6 border-t border-gray-700">
+                        <!-- Data Import Section -->
+                        <div id="importer" class="p-6 rounded-lg shadow-lg bg-secondary mb-6">
+                            <h3 class="text-xl font-bold text-center text-amber-500 mb-4 font-creepster tracking-wider">The Import Cauldron</h3>
+                            <p class="text-center text-gray-400 text-sm mb-4">For a one-time import of historical data from a CSV file.</p>
+                            <textarea id="csvInput" rows="8" class="w-full p-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Paste your CSV data here... (id,year)"></textarea>
+                            <button id="importBtn" class="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded transition duration-300 btn-glow">
+                                <i class="fas fa-magic mr-2"></i>Import History
+                            </button>
+                        </div>
+                        <!-- Danger Zone -->
+                        <div id="dangerZone" class="p-6 rounded-lg border-2 border-dashed border-red-900 shadow-lg bg-secondary">
+                            <h3 class="text-xl font-bold text-center text-red-500 mb-4 font-creepster tracking-wider">Danger Zone</h3>
+                            <p class="text-center text-gray-400 text-sm mb-4">These actions cannot be undone. Proceed with caution.</p>
+                            <button id="clearDataBtn" class="mt-4 w-full bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-6 rounded transition duration-300 btn-glow">
+                                <i class="fas fa-biohazard mr-2"></i>Clear All Watch History & Watchlist
+                            </button>
+                        </div>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
     <!-- Modals outside container -->
@@ -258,6 +264,25 @@
             <div class="flex justify-center space-x-4">
                 <button data-action="closeConfirmModal" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded btn-glow">Cancel</button>
                 <button data-action="confirmClearData" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <div id="watchHistoryModal" class="modal">
+        <div class="modal-content !max-w-lg">
+            <span class="close-button" data-action="closeWatchHistoryModal">&times;</span>
+            <h2 class="text-2xl font-creepster text-red-500 mb-2">Log a Watch For...</h2>
+            <p id="watchHistoryModalTitle" class="text-xl text-white mb-4"></p>
+            <button class="bg-red-800 hover:bg-red-900 text-white font-bold py-3 px-4 rounded w-full mb-6 btn-glow" data-action="addForCurrentYear">
+                <i class="fas fa-calendar-check mr-2"></i>Log For This Year
+            </button>
+            <div class="border-t border-gray-700 pt-4">
+                 <h3 class="text-lg font-bold text-gray-400 mb-3 text-center">...Or Backlog Previous Years</h3>
+                 <div id="watchHistoryYearContainer" class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-2">
+                    <!-- Year checkboxes will be injected here -->
+                 </div>
+                 <button class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded w-full mt-4 btn-glow" data-action="saveWatchHistory">
+                    <i class="fas fa-save mr-2"></i>Save Backlog
+                </button>
             </div>
         </div>
     </div>
@@ -332,6 +357,8 @@
             const movieDetailModal = document.getElementById('movieDetailModal');
             const ratingModal = document.getElementById('ratingModal');
             const goalModal = document.getElementById('goalModal');
+            const confirmModal = document.getElementById('confirmModal');
+            const watchHistoryModal = document.getElementById('watchHistoryModal');
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const tabs = document.querySelectorAll('.tab-link');
@@ -344,7 +371,6 @@
             const importBtn = document.getElementById('importBtn');
             const csvInput = document.getElementById('csvInput');
             const clearDataBtn = document.getElementById('clearDataBtn');
-            const confirmModal = document.getElementById('confirmModal');
             
             // Chart instances
             let directorsChartInstance, genresChartInstance;
@@ -406,15 +432,14 @@
             const closeMessageModal = () => document.getElementById('messageModal').style.display = 'none';
             const closeGoalModal = () => document.getElementById('goalModal').style.display = 'none';
             const closeRatingModal = () => document.getElementById('ratingModal').style.display = 'none';
+            const closeConfirmModal = () => document.getElementById('confirmModal').style.display = 'none';
+            const closeWatchHistoryModal = () => document.getElementById('watchHistoryModal').style.display = 'none';
 
             const openConfirmModal = (message) => {
                 document.getElementById('confirmMessage').textContent = message;
                 confirmModal.style.display = 'block';
             };
-            const closeConfirmModal = () => {
-                confirmModal.style.display = 'none';
-            };
-
+            
             const openRatingModal = (movie) => {
                 document.getElementById('ratingModalTitle').textContent = movie.title;
                 const skullContainer = ratingModal.querySelector('.skull-rating');
@@ -428,6 +453,26 @@
                 setupSkullRating(movie.id, ratingModal);
                 ratingModal.style.display = 'block';
             };
+            
+            const openWatchHistoryModal = (movieString) => {
+                const movie = JSON.parse(decodeURIComponent(movieString));
+                document.getElementById('watchHistoryModalTitle').textContent = movie.title;
+                watchHistoryModal.dataset.movieString = movieString;
+                
+                const yearContainer = document.getElementById('watchHistoryYearContainer');
+                yearContainer.innerHTML = '';
+                const currentYear = new Date().getFullYear();
+                for (let i = currentYear; i >= currentYear - 20; i--) {
+                    yearContainer.innerHTML += `
+                        <label class="flex items-center space-x-2 p-1 rounded-md hover:bg-gray-700 cursor-pointer">
+                            <input type="checkbox" value="${i}" class="form-checkbox h-5 w-5 bg-gray-800 border-gray-600 text-red-600 focus:ring-red-500">
+                            <span class="text-white">${i}</span>
+                        </label>
+                    `;
+                }
+                watchHistoryModal.style.display = 'block';
+            };
+
 
             const openDetailModal = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
@@ -648,7 +693,7 @@
                     
                     if (listType === 'watch') {
                          buttons = `
-                            <button data-action="markAsWatched" data-movie-id="${movie.id}" class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow">Mark as Watched</button>
+                            <button data-action="markAsWatched" data-movie-string='${movieString}' class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full mb-2 btn-glow">Mark as Watched</button>
                             <button data-action="removeFromWatchlist" data-movie-id="${movie.id}" class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow">Remove</button>
                         `;
                     } else if (listType === 'watched') {
@@ -841,6 +886,14 @@
                 await loadInitialData();
             };
 
+            async function upsertAndLog(movie, date) {
+                const fullDetails = await fetchMovieById(movie.id);
+                const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity, director: fullDetails ? fullDetails.director : 'Unknown' };
+                await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
+                await _supabase.from('watch_log').insert({ movie_id: movie.id, watched_at: date });
+                await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
+            }
+
             const addToWatchList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity };
@@ -851,23 +904,7 @@
                 await loadInitialData();
                 showModal(movie.title, 'addWatchlist');
             };
-            const addToWatchedList = async (movieString) => {
-                const movie = JSON.parse(decodeURIComponent(movieString));
-                const fullDetails = await fetchMovieById(movie.id);
-                const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity, director: fullDetails.director };
-                await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
-                await _supabase.from('watch_log').insert({ movie_id: movie.id, watched_at: new Date().toISOString() });
-                await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
-                await loadInitialData();
-                openRatingModal(movie);
-            };
-            const markAsWatched = async (movieId) => {
-                const movie = watchListData.find(m => m.id === movieId);
-                await _supabase.from('watch_log').insert({ movie_id: movieId, watched_at: new Date().toISOString() });
-                await _supabase.from('watchlist').delete().eq('movie_id', movieId);
-                await loadInitialData();
-                openRatingModal(movie);
-            };
+
             const removeFromWatchlist = async (movieId) => {
                  const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
@@ -1015,28 +1052,60 @@
 
 
             // --- EVENT LISTENERS ---
-            document.body.addEventListener('click', e => { 
+            document.body.addEventListener('click', async e => { 
                 const target = e.target.closest('[data-action]');
                 if (target) {
                     e.stopPropagation();
                     const action = target.dataset.action;
-                    const movieId = target.dataset.movieId;
                     const movieString = target.dataset.movieString;
 
                     if (action === 'openDetailModal') openDetailModal(movieString);
                     if (action === 'addToWatchList') addToWatchList(movieString);
-                    if (action === 'addToWatchedList') addToWatchedList(movieString);
-                    if (action === 'markAsWatched') markAsWatched(parseInt(movieId));
-                    if (action === 'removeFromWatchlist') removeFromWatchlist(parseInt(movieId));
-                    if (action === 'removeFromWatched') removeFromWatched(parseInt(movieId));
+                    if (action === 'addToWatchedList' || action === 'markAsWatched') openWatchHistoryModal(movieString);
+                    if (action === 'removeFromWatchlist') removeFromWatchlist(parseInt(target.dataset.movieId));
+                    if (action === 'removeFromWatched') removeFromWatched(parseInt(target.dataset.movieId));
                     if (action === 'closeMessageModal') closeMessageModal();
                     if (action === 'closeGoalModal') closeGoalModal();
                     if (action === 'closeRatingModal') closeRatingModal();
                     if (action === 'closeDetailModal') closeDetailModal();
                     if (action === 'closeConfirmModal') closeConfirmModal();
+                    if (action === 'closeWatchHistoryModal') closeWatchHistoryModal();
                     if (action === 'confirmClearData') {
                         closeConfirmModal();
                         clearAllData();
+                    }
+                    if (action === 'addForCurrentYear') {
+                        const movie = JSON.parse(decodeURIComponent(watchHistoryModal.dataset.movieString));
+                        await upsertAndLog(movie, new Date().toISOString());
+                        closeWatchHistoryModal();
+                        await loadInitialData();
+                        openRatingModal(movie);
+                    }
+                    if (action === 'saveWatchHistory') {
+                        const movie = JSON.parse(decodeURIComponent(watchHistoryModal.dataset.movieString));
+                        const yearCheckboxes = watchHistoryModal.querySelectorAll('#watchHistoryYearContainer input:checked');
+                        const selectedYears = Array.from(yearCheckboxes).map(cb => cb.value);
+
+                        if (selectedYears.length > 0) {
+                            loader.style.display = 'block';
+                            const { data: existingMovie } = await _supabase.from('movies').select('id').eq('id', movie.id).single();
+                            if(!existingMovie) {
+                               const fullDetails = await fetchMovieById(movie.id);
+                               const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity, director: fullDetails ? fullDetails.director : 'Unknown' };
+                               await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
+                            }
+
+                            const logEntries = selectedYears.map(year => ({
+                                movie_id: movie.id,
+                                watched_at: `${year}-10-31`
+                            }));
+                            await _supabase.from('watch_log').insert(logEntries);
+                            await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
+                            loader.style.display = 'none';
+                            showModal(`Added ${selectedYears.length} watch record(s) for ${movie.title}.`, 'success');
+                            await loadInitialData();
+                        }
+                        closeWatchHistoryModal();
                     }
                 }
             });
@@ -1047,6 +1116,7 @@
                 if (e.target == goalModal) closeGoalModal(); 
                 if (e.target == ratingModal) closeRatingModal();
                 if (e.target == confirmModal) closeConfirmModal();
+                if (e.target == watchHistoryModal) closeWatchHistoryModal();
                 if (!e.target.closest('.sort-dropdown')) {
                     document.querySelectorAll('.sort-menu').forEach(menu => menu.classList.add('hidden'));
                 }
