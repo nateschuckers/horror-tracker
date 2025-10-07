@@ -109,7 +109,7 @@
         @keyframes staticFlicker { 0%, 100% { opacity: 0.04; } 50% { opacity: 0.08; } }
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUEUgAAADIAAAAyBAMAAADsEZWCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVQTFRFAAAAAAAAEBAQICAwMDBAQEBAgICAgICAwMDAw/aOAAAACHRSTlMAAQkfLS9OU1hsc3yGj5SZp8HDzNXm8/X+3RXcAgAAARNJREFUeNqslFsKgzAMQ+2s2dX///2t20w6KQu8OEeRecWpa1gxb4lJpsU60lWdYqlBNU1e1Y0KkK5SNQ21rCqCVVXBKOoqISw5w8so1jFiChWUcSgrBfL/wZ0aUqhe1AOkA3X1o/aAHkAFiBpAB4gO4gK4AC4gG4gOxgfygZwA84E84Hwga/gI/gIeYQjxgGfGQ8wgvsRE4jGWGK/xwjgR1seRrkS5EhdRn8hBvEa5GuRLp1O+xbdW69WruW3duo29G2/Uj/tV/T6/ot/D7/Ff/vH/Jn/WP/mH/Cn/RD/pT/pB/wE/4D/4h/wB/4A/4A/4A/4BfwFP2U4z/AAAAAElFTSuQmCC');
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABVQTFRFAAAAAAAAEBAQICAwMDBAQEBAgICAgICAwMDAw/aOAAAACHRSTlMAAQkfLS9OU1hsc3yGj5SZp8HDzNXm8/X+3RXcAgAAARNJREFUeNqslFsKgzAMQ+2s2dX///2t20w6KQu8OEeRecWpa1gxb4lJpsU60lWdYqlBNU1e1Y0KkK5SNQ21rCqCVVXBKOoqISw5w8so1jFiChWUcSgrBfL/wZ0aUqhe1AOkA3X1o/aAHkAFiBpAB4gO4gK4AC4gG4gOxgfygZwA84E84Hwga/gI/gIeYQjxgGfGQ8wgvsRE4jGWGK/xwjgR1seRrkS5EhdRn8hBvEa5GuRLp1O+xbdW69WruW3duo29G2/Uj/tV/T6/ot/D7/Ff/vH/Jn/WP/mH/Cn/RD/pT/pB/wE/4D/4h/wB/4A/4A/4A/4BfwFP2U4z/AAAAAElFTSuQmCC');
             opacity: 0.05; z-index: 999; pointer-events: none; animation: staticFlicker 0.2s infinite;
         }
         
@@ -374,6 +374,8 @@
                     case 'alreadyExists': message = `'${title}' already haunts your lists.`; iconHtml = '<i class="fas fa-ghost text-yellow-400"></i>'; break;
                     case 'removedWatchlist': message = `'${title}' has vanished.`; iconHtml = '<i class="fas fa-eye-slash text-gray-500"></i>'; break;
                     case 'removedWatched': message = `'${title}' has been exorcised.`; iconHtml = '<i class="fas fa-ban text-red-500"></i>'; break;
+                    case 'success': message = title; iconHtml = '<i class="fas fa-check-circle text-green-400"></i>'; break; // <-- FIX: Added success case
+                    case 'error': message = title; iconHtml = '<i class="fas fa-exclamation-triangle text-red-500"></i>'; break; // <-- FIX: Added error case
                     default: message = title; iconHtml = '<i class="fas fa-info-circle text-gray-400"></i>';
                 }
                 modalMessage.textContent = message;
@@ -862,7 +864,9 @@
              // --- Data Import Functions ---
             function convertCsvToHistory(csvText) {
               const lines = csvText.trim().split('\n');
-              const headers = lines.shift().trim().split(',');
+              const headersLine = lines.shift();
+              if (!headersLine) return null;
+              const headers = headersLine.trim().split(',');
               const idIndex = headers.indexOf('id');
               const yearIndex = headers.indexOf('year');
 
@@ -879,63 +883,80 @@
                 };
               }).filter(item => !isNaN(item.id) && !isNaN(item.year));
               
-              console.log(`%cSuccessfully converted ${history.length} records. The variable 'myHistory' is now ready.`, "color: lightgreen; font-weight: bold;");
+              console.log(`%cSuccessfully converted ${history.length} records.`, "color: lightgreen; font-weight: bold;");
               return history;
             }
-
+            
+            // <-- FIX: REPLACED ENTIRE IMPORT FUNCTION WITH A MORE ROBUST VERSION
             async function importOldData(history) {
-              console.log(`Starting import for ${history.length} watch records...`);
-              loader.style.display = 'block';
+                console.log(`Starting import for ${history.length} watch records...`);
+                loader.style.display = 'block';
 
-              const { data: existingMovies } = await _supabase.from('movies').select('id');
-              const existingMovieIds = new Set(existingMovies.map(m => m.id));
-              
-              const newMoviesToFetch = new Set();
-              history.forEach(log => {
-                if (!existingMovieIds.has(log.id)) {
-                  newMoviesToFetch.add(log.id);
+                const { data: existingMovies } = await _supabase.from('movies').select('id');
+                const existingMovieIds = new Set(existingMovies.map(m => m.id));
+
+                const newMoviesToFetch = new Set();
+                history.forEach(log => {
+                    if (!existingMovieIds.has(log.id)) {
+                        newMoviesToFetch.add(log.id);
+                    }
+                });
+
+                console.log(`Found ${newMoviesToFetch.size} new movies to fetch from TMDb.`);
+
+                if (newMoviesToFetch.size > 0) {
+                    console.log("Fetching new movie details...");
+                    const moviePromises = Array.from(newMoviesToFetch).map(id => fetchMovieById(id));
+                    const newMovieDetails = await Promise.all(moviePromises);
+                    
+                    const moviesToInsert = newMovieDetails.filter(Boolean).map(movie => ({
+                        id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date,
+                        vote_average: movie.vote_average, popularity: movie.popularity, director: movie.director
+                    }));
+                    
+                    if (moviesToInsert.length > 0) {
+                        console.log(`Adding ${moviesToInsert.length} new movies to the 'movies' table...`);
+                        const { error: movieInsertError } = await _supabase.from('movies').insert(moviesToInsert);
+                        if (movieInsertError) { 
+                            console.error("CRITICAL ERROR inserting movies:", movieInsertError); 
+                            loader.style.display = 'none';
+                            showModal('Error adding new movies to the database. Check console.', 'error');
+                            return; 
+                        }
+                        // Add newly inserted movie IDs to our set of known valid IDs
+                        moviesToInsert.forEach(movie => existingMovieIds.add(movie.id));
+                    }
                 }
-              });
 
-              console.log(`Found ${newMoviesToFetch.size} new movies to fetch from TMDb.`);
-
-              if (newMoviesToFetch.size > 0) {
-                console.log("Fetching new movie details...");
-                const moviePromises = Array.from(newMoviesToFetch).map(id => fetchMovieById(id));
-                const newMovieDetails = await Promise.all(moviePromises);
+                // Filter the history to only include logs for movies that now exist in our DB
+                const validHistory = history.filter(log => existingMovieIds.has(log.id));
                 
-                const moviesToInsert = newMovieDetails.filter(Boolean).map(movie => ({
-                  id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date,
-                  vote_average: movie.vote_average, popularity: movie.popularity, director: movie.director
+                if(validHistory.length < history.length) {
+                    console.warn(`${history.length - validHistory.length} records were skipped because their movie IDs could not be found or fetched from TMDb.`);
+                }
+
+                const watchLogToInsert = validHistory.map(log => ({
+                    movie_id: log.id,
+                    watched_at: `${log.year}-10-31` // Using Halloween as a placeholder date
                 }));
 
-                console.log(`Adding ${moviesToInsert.length} new movies to the 'movies' table...`);
-                const { error: movieInsertError } = await _supabase.from('movies').insert(moviesToInsert);
-                if (movieInsertError) { 
-                    console.error("CRITICAL ERROR inserting movies:", movieInsertError); 
-                    loader.style.display = 'none';
-                    return; 
+                if (watchLogToInsert.length > 0) {
+                    console.log(`Adding ${watchLogToInsert.length} entries to the 'watch_log' table...`);
+                    const { error: logInsertError } = await _supabase.from('watch_log').insert(watchLogToInsert);
+
+                    if (logInsertError) {
+                        console.error("CRITICAL ERROR inserting watch log:", logInsertError);
+                        loader.style.display = 'none';
+                        showModal('Error adding watch history. Check console for details.', 'error');
+                        return;
+                    }
                 }
-              }
-
-              const watchLogToInsert = history.map(log => ({
-                movie_id: log.id,
-                watched_at: `${log.year}-10-31` // Using Halloween as a placeholder date for past logs
-              }));
-
-              console.log(`Adding ${watchLogToInsert.length} entries to the 'watch_log' table...`);
-              const { error: logInsertError } = await _supabase.from('watch_log').insert(watchLogToInsert);
-
-              if (logInsertError) {
-                console.error("CRITICAL ERROR inserting watch log:", logInsertError);
+                
                 loader.style.display = 'none';
-                return;
-              }
-              
-              loader.style.display = 'none';
-              document.getElementById('importer').style.display = 'none';
-              console.log("%cSUCCESS! Import complete. Reloading the app to see your history...", "color: lightgreen; font-weight: bold;");
-              setTimeout(() => location.reload(), 1000);
+                document.getElementById('importer').style.display = 'none';
+                showModal('Import complete! Reloading the app to see your history.', 'success');
+                console.log("%cSUCCESS! Import complete. Reloading the app to see your history...", "color: lightgreen; font-weight: bold;");
+                setTimeout(() => location.reload(), 2000);
             }
 
 
@@ -1015,16 +1036,19 @@
             
             toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
             toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
-
+            
+            // <-- FIX: Replaced alert with showModal and added better error handling
             importBtn.addEventListener('click', () => {
                 const csvText = csvInput.value;
                 if (!csvText || !csvText.trim()) {
-                    alert("Please paste your CSV data into the box.");
+                    showModal("Please paste your CSV data into the box.", "error");
                     return;
                 }
                 const history = convertCsvToHistory(csvText);
                 if (history) {
                     importOldData(history);
+                } else {
+                    showModal("Could not parse CSV. Ensure it has 'id' and 'year' columns.", "error");
                 }
             });
             
@@ -1037,4 +1061,3 @@
     </script>
 </body>
 </html>
-
