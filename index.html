@@ -271,8 +271,8 @@
         // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
         // #  (Make sure they are inside the single quotes '')                 #
         // #####################################################################
-            const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
+        const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
         // #####################################################################
         
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -472,6 +472,7 @@
                     return { movies: data.results ? data.results.filter(m => m.genre_ids.includes(HORROR_GENRE_ID)) : [] };
                 } catch (error) { loader.style.display = 'none'; return { error: 'An error occurred during search.' }; }
             };
+            
 
             // Main App Logic & Rendering
             const renderDashboardStats = () => {
@@ -743,8 +744,13 @@
                 const allLogs = watchLogData || [];
                 const allWatchlist = watchlistData || [];
 
+                // Combine movie data with watch log data
                 watchedListData = allMovies.filter(movie => allLogs.some(log => log.movie_id === movie.id));
+                
+                // Populate the watchlist data
                 watchListData = allWatchlist.map(item => item.movies).filter(Boolean);
+                
+                // Format the watch log
                 watchLog = allLogs.map(log => ({ ...log, year: new Date(log.watched_at).getFullYear() }));
                 
                 renderLists();
