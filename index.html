@@ -278,7 +278,6 @@
     <script>
         // #####################################################################
         // #  YOUR ACTION REQUIRED: PASTE YOUR SUPABASE CREDENTIALS BELOW      #
-        // #  (Make sure they are inside the single quotes '')                 #
         // #####################################################################
         const SUPABASE_URL = 'https://zjodcuoopwewmqwvdniv.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqb2RjdW9vcHdld21xd3Zkbml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3Njk5MzEsImV4cCI6MjA3NTM0NTkzMX0.K5O-HLdhFtDkrs_Md3WOi9q5M7_0aAUgArCnC4FsHFQ';
@@ -860,6 +859,86 @@
                 else displayMovies(movies, searchResults, 'search');
             }
 
+             // --- Data Import Functions ---
+            function convertCsvToHistory(csvText) {
+              const lines = csvText.trim().split('\n');
+              const headers = lines.shift().trim().split(',');
+              const idIndex = headers.indexOf('id');
+              const yearIndex = headers.indexOf('year');
+
+              if (idIndex === -1 || yearIndex === -1) {
+                console.error("CSV must have 'id' and 'year' columns.");
+                return null;
+              }
+
+              const history = lines.map(line => {
+                const values = line.trim().split(',');
+                return {
+                  id: parseInt(values[idIndex], 10),
+                  year: parseInt(values[yearIndex], 10)
+                };
+              }).filter(item => !isNaN(item.id) && !isNaN(item.year));
+              
+              console.log(`%cSuccessfully converted ${history.length} records. The variable 'myHistory' is now ready.`, "color: lightgreen; font-weight: bold;");
+              return history;
+            }
+
+            async function importOldData(history) {
+              console.log(`Starting import for ${history.length} watch records...`);
+              loader.style.display = 'block';
+
+              const { data: existingMovies } = await _supabase.from('movies').select('id');
+              const existingMovieIds = new Set(existingMovies.map(m => m.id));
+              
+              const newMoviesToFetch = new Set();
+              history.forEach(log => {
+                if (!existingMovieIds.has(log.id)) {
+                  newMoviesToFetch.add(log.id);
+                }
+              });
+
+              console.log(`Found ${newMoviesToFetch.size} new movies to fetch from TMDb.`);
+
+              if (newMoviesToFetch.size > 0) {
+                console.log("Fetching new movie details...");
+                const moviePromises = Array.from(newMoviesToFetch).map(id => fetchMovieById(id));
+                const newMovieDetails = await Promise.all(moviePromises);
+                
+                const moviesToInsert = newMovieDetails.filter(Boolean).map(movie => ({
+                  id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date,
+                  vote_average: movie.vote_average, popularity: movie.popularity, director: movie.director
+                }));
+
+                console.log(`Adding ${moviesToInsert.length} new movies to the 'movies' table...`);
+                const { error: movieInsertError } = await _supabase.from('movies').insert(moviesToInsert);
+                if (movieInsertError) { 
+                    console.error("CRITICAL ERROR inserting movies:", movieInsertError); 
+                    loader.style.display = 'none';
+                    return; 
+                }
+              }
+
+              const watchLogToInsert = history.map(log => ({
+                movie_id: log.id,
+                watched_at: `${log.year}-10-31` // Using Halloween as a placeholder date for past logs
+              }));
+
+              console.log(`Adding ${watchLogToInsert.length} entries to the 'watch_log' table...`);
+              const { error: logInsertError } = await _supabase.from('watch_log').insert(watchLogToInsert);
+
+              if (logInsertError) {
+                console.error("CRITICAL ERROR inserting watch log:", logInsertError);
+                loader.style.display = 'none';
+                return;
+              }
+              
+              loader.style.display = 'none';
+              document.getElementById('importer').style.display = 'none';
+              console.log("%cSUCCESS! Import complete. Reloading the app to see your history...", "color: lightgreen; font-weight: bold;");
+              setTimeout(() => location.reload(), 1000);
+            }
+
+
             // --- EVENT LISTENERS ---
             document.body.addEventListener('click', e => { 
                 const target = e.target.closest('[data-action]');
@@ -937,6 +1016,17 @@
             toggleWatchedStatsBtn.addEventListener('click', () => { dashboardStatView = 'watched'; renderDashboardStats(); });
             toggleWatchlistStatsBtn.addEventListener('click', () => { dashboardStatView = 'watchlist'; renderDashboardStats(); });
 
+            importBtn.addEventListener('click', () => {
+                const csvText = csvInput.value;
+                if (!csvText || !csvText.trim()) {
+                    alert("Please paste your CSV data into the box.");
+                    return;
+                }
+                const history = convertCsvToHistory(csvText);
+                if (history) {
+                    importOldData(history);
+                }
+            });
             
             const firstTab = document.querySelector('.tab-link');
             const firstTabContent = document.getElementById(firstTab.dataset.tab);
