@@ -231,10 +231,10 @@
         </div>
     </div>
     <!-- Modals outside container -->
-    <div id="messageModal" class="modal"> <div class="modal-content !max-w-sm !py-8 text-center bg-secondary"> <div id="modalIcon" class="text-4xl mb-4"></div> <p id="modalMessage" class="text-lg text-white mb-6">Message here.</p> <button onclick="closeMessageModal()" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Close</button> </div> </div>
-    <div id="goalModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary border-red-700 border-2"> <div class="text-6xl mb-4 text-red-500"><i class="fas fa-trophy animate-bounce"></i></div> <h2 class="text-3xl font-creepster text-red-500 mb-4">Challenge Complete!</h2> <p class="text-lg text-white mb-6">You've survived 31 nights of horror... and then some.</p> <p class="quote mt-4 mb-6">"It's alive! It's alive!"</p> <button onclick="closeGoalModal()" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Continue the Horror</button> </div> </div>
-    <div id="ratingModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary"> <h2 class="text-2xl font-creepster text-red-500 mb-2">You've Claimed a New Victim!</h2> <p id="ratingModalTitle" class="text-lg text-white mb-4"></p> <div id="ratingModalPersonalRating" class="my-6"> <p class="text-sm text-gray-500 mb-2">RATE YOUR EXPERIENCE</p> <div class="skull-rating text-3xl flex flex-wrap justify-center"></div> </div> <button onclick="closeRatingModal()" class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Seal Their Fate</button> </div> </div>
-    <div id="movieDetailModal" class="modal"> <div class="modal-content relative"> <span class="close-button">&times;</span> <div class="md:flex md:space-x-8"> <div class="md:w-1/3"> <img id="modalPoster" src="" alt="Movie Poster" class="rounded-lg shadow-lg w-full" crossorigin="anonymous"> </div> <div class="md:w-2/3 mt-6 md:mt-0 modal-scroll max-h-[70vh] overflow-y-auto pr-4"> <h2 id="modalTitle" class="text-3xl font-bold text-red-600 transition-colors duration-500">Movie Title</h2> <p id="modalYearAndDirector" class="text-lg text-gray-400 mb-4">Year</p>
+    <div id="messageModal" class="modal"> <div class="modal-content !max-w-sm !py-8 text-center bg-secondary"> <div id="modalIcon" class="text-4xl mb-4"></div> <p id="modalMessage" class="text-lg text-white mb-6">Message here.</p> <button data-action="closeMessageModal" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Close</button> </div> </div>
+    <div id="goalModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary border-red-700 border-2"> <div class="text-6xl mb-4 text-red-500"><i class="fas fa-trophy animate-bounce"></i></div> <h2 class="text-3xl font-creepster text-red-500 mb-4">Challenge Complete!</h2> <p class="text-lg text-white mb-6">You've survived 31 nights of horror... and then some.</p> <p class="quote mt-4 mb-6">"It's alive! It's alive!"</p> <button data-action="closeGoalModal" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Continue the Horror</button> </div> </div>
+    <div id="ratingModal" class="modal"> <div class="modal-content !max-w-md !py-8 text-center bg-secondary"> <h2 class="text-2xl font-creepster text-red-500 mb-2">You've Claimed a New Victim!</h2> <p id="ratingModalTitle" class="text-lg text-white mb-4"></p> <div id="ratingModalPersonalRating" class="my-6"> <p class="text-sm text-gray-500 mb-2">RATE YOUR EXPERIENCE</p> <div class="skull-rating text-3xl flex flex-wrap justify-center"></div> </div> <button data-action="closeRatingModal" class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded btn-glow">Seal Their Fate</button> </div> </div>
+    <div id="movieDetailModal" class="modal"> <div class="modal-content relative"> <span class="close-button" data-action="closeDetailModal">&times;</span> <div class="md:flex md:space-x-8"> <div class="md:w-1/3"> <img id="modalPoster" src="" alt="Movie Poster" class="rounded-lg shadow-lg w-full" crossorigin="anonymous"> </div> <div class="md:w-2/3 mt-6 md:mt-0 modal-scroll max-h-[70vh] overflow-y-auto pr-4"> <h2 id="modalTitle" class="text-3xl font-bold text-red-600 transition-colors duration-500">Movie Title</h2> <p id="modalYearAndDirector" class="text-lg text-gray-400 mb-4">Year</p>
                 <div class="flex items-center my-4">
                     <div class="pr-4">
                         <p class="text-sm text-gray-500">TMDb RATING</p>
@@ -360,7 +360,11 @@
                 modalIcon.innerHTML = iconHtml;
                 messageModal.style.display = 'block';
             };
-            
+
+            const closeMessageModal = () => document.getElementById('messageModal').style.display = 'none';
+            const closeGoalModal = () => document.getElementById('goalModal').style.display = 'none';
+            const closeRatingModal = () => document.getElementById('ratingModal').style.display = 'none';
+
             const openRatingModal = (movie) => {
                 document.getElementById('ratingModalTitle').textContent = movie.title;
                 const skullContainer = ratingModal.querySelector('.skull-rating');
@@ -410,7 +414,7 @@
                 const isMovieInWatchList = watchListData.some(m => m.id === movie.id);
                 let buttons = '';
                 if (isMovieInWatchedList) buttons = `<p class="w-full text-center text-green-400">You have watched this movie.</p>`;
-                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchedList" data-movie-string='${movieString}'> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="removeFromWatchlist" data-movie-id="${movie.id}">Remove from Watchlist</button>`;
+                else if (isMovieInWatchList) buttons = `<button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="markAsWatched" data-movie-id="${movie.id}"> Mark as Watched</button><button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="removeFromWatchlist" data-movie-id="${movie.id}">Remove from Watchlist</button>`;
                 else buttons = `<button class="bg-gray-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchList" data-movie-string='${movieString}'><i class="fas fa-eye mr-2"></i> Add to Watchlist</button><button class="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-4 rounded w-full btn-glow" data-action="addToWatchedList" data-movie-string='${movieString}'><i class="fas fa-check mr-2"></i> Mark as Watched</button>`;
                 modalButtons.innerHTML = buttons;
 
@@ -436,6 +440,14 @@
                         modalBudget.textContent = 'N/A'; modalRevenue.textContent = 'N/A'; modalProfit.textContent = 'N/A';
                     }
                 }
+            };
+            
+            const closeDetailModal = () => {
+                 movieDetailModal.style.display = 'none';
+                 const modalContent = movieDetailModal.querySelector('.modal-content');
+                 const modalTitle = document.getElementById('modalTitle');
+                 modalContent.style.borderColor = '#4b5563';
+                 modalTitle.style.color = '#ef4444';
             };
 
             // API Fetching
@@ -558,7 +570,11 @@
                     skull.onmouseout = () => skulls.forEach(s => s.classList.remove('hover-rated'));
                     skull.onclick = async () => {
                         const newRating = parseInt(skull.dataset.value);
-                        await _supabase.from('movies').update({ personal_rating: newRating }).eq('id', movieId);
+                        const { error } = await _supabase.from('movies').update({ personal_rating: newRating }).eq('id', movieId);
+                        if (error) {
+                            console.error("Error updating rating:", error);
+                            return;
+                        }
                         updateSkulls(newRating);
                         loadInitialData(); // Re-fetch to update averages
                     };
@@ -716,13 +732,13 @@
             
             async function loadInitialData() {
                 const { data: moviesData, error: moviesError } = await _supabase.from('movies').select('*');
-                if (moviesError) { console.error(moviesError); return; }
+                if (moviesError) { console.error("Error fetching movies:", moviesError); return; }
                 
                 const { data: watchLogData, error: logError } = await _supabase.from('watch_log').select('*');
-                if (logError) { console.error(logError); return; }
+                if (logError) { console.error("Error fetching watch log:", logError); return; }
 
                 const { data: watchlistData, error: watchlistError } = await _supabase.from('watchlist').select('*, movies(*)');
-                if (watchlistError) { console.error(watchlistError); return; }
+                if (watchlistError) { console.error("Error fetching watchlist:", watchlistError); return; }
 
                 watchedListData = moviesData.filter(movie => watchLogData.some(log => log.movie_id === movie.id));
                 watchListData = watchlistData.map(item => item.movies);
@@ -751,9 +767,8 @@
             // List Management
             const addToWatchList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
-                // Add to movies table first to ensure it exists
-                await _supabase.from('movies').upsert({ id: movie.id, ...movie }, { onConflict: 'id' });
-                // Then add to watchlist
+                const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity };
+                await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
                 await _supabase.from('watchlist').insert({ movie_id: movie.id });
                 loadInitialData();
                 showModal(movie.title, 'addWatchlist');
@@ -761,7 +776,8 @@
             const addToWatchedList = async (movieString) => {
                 const movie = JSON.parse(decodeURIComponent(movieString));
                 const fullDetails = await fetchMovieById(movie.id);
-                await _supabase.from('movies').upsert({ id: movie.id, director: fullDetails.director, ...movie }, { onConflict: 'id' });
+                const movieData = { id: movie.id, title: movie.title, poster_path: movie.poster_path, release_date: movie.release_date, vote_average: movie.vote_average, popularity: movie.popularity, director: fullDetails.director };
+                await _supabase.from('movies').upsert(movieData, { onConflict: 'id' });
                 await _supabase.from('watch_log').insert({ movie_id: movie.id, watched_at: new Date().toISOString() });
                 await _supabase.from('watchlist').delete().eq('movie_id', movie.id);
                 loadInitialData();
@@ -775,7 +791,7 @@
                 openRatingModal(movie);
             };
             const removeFromWatchlist = async (movieId) => {
-                 const movie = watchListData.find(m => m.id === movieId);
+                const movie = watchListData.find(m => m.id === movieId);
                 await _supabase.from('watchlist').delete().eq('movie_id', movieId);
                 loadInitialData();
                 showModal(movie.title, 'removedWatchlist');
@@ -836,6 +852,10 @@
                     if (action === 'markAsWatched') markAsWatched(parseInt(movieId));
                     if (action === 'removeFromWatchlist') removeFromWatchlist(parseInt(movieId));
                     if (action === 'removeFromWatched') removeFromWatched(parseInt(movieId));
+                    if (action === 'closeMessageModal') closeMessageModal();
+                    if (action === 'closeGoalModal') closeGoalModal();
+                    if (action === 'closeRatingModal') closeRatingModal();
+                    if (action === 'closeDetailModal') closeDetailModal();
                 }
 
                 if (e.target.closest('.close-button')) closeDetailModal();
