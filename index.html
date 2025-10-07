@@ -394,8 +394,8 @@
                     case 'alreadyExists': message = `'${title}' already haunts your lists.`; iconHtml = '<i class="fas fa-ghost text-yellow-400"></i>'; break;
                     case 'removedWatchlist': message = `'${title}' has vanished.`; iconHtml = '<i class="fas fa-eye-slash text-gray-500"></i>'; break;
                     case 'removedWatched': message = `'${title}' has been exorcised.`; iconHtml = '<i class="fas fa-ban text-red-500"></i>'; break;
-                    case 'success': message = title; iconHtml = '<i class="fas fa-check-circle text-green-400"></i>'; break; // <-- FIX: Added success case
-                    case 'error': message = title; iconHtml = '<i class="fas fa-exclamation-triangle text-red-500"></i>'; break; // <-- FIX: Added error case
+                    case 'success': message = title; iconHtml = '<i class="fas fa-check-circle text-green-400"></i>'; break;
+                    case 'error': message = title; iconHtml = '<i class="fas fa-exclamation-triangle text-red-500"></i>'; break;
                     default: message = title; iconHtml = '<i class="fas fa-info-circle text-gray-400"></i>';
                 }
                 modalMessage.textContent = message;
@@ -745,12 +745,12 @@
                 if (yearlyButtonsContainer.firstChild) yearlyButtonsContainer.firstChild.click();
             };
 
-            const renderAdvancedCharts = async () => {
+            const renderAdvancedCharts = () => {
                 const CHART_COLORS = ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'];
                 if (directorsChartInstance) directorsChartInstance.destroy();
                 if (genresChartInstance) genresChartInstance.destroy();
 
-                const { data } = await _supabase.from('movies').select('director, release_date').not('director', 'is', null);
+                const data = watchedListData.filter(movie => movie.director);
                 
                 const directorCounts = data.reduce((acc, movie) => { acc[movie.director] = (acc[movie.director] || 0) + 1; return acc; }, {});
                 const sortedDirectors = Object.entries(directorCounts).sort(([,a],[,b]) => b-a).slice(0, 10);
