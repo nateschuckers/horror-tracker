@@ -245,6 +245,11 @@
                 <div id="watchedList" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-12"></div> 
             </div>
             <div id="rewatchstats" class="tab-content"> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> </div> <div class="flex justify-between items-center mb-6 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</h2> <div id="sortRewatch" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <div id="rewatchStatsContainer" class="space-y-4"></div> 
+                <div class="mt-12">
+                    <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-fire-alt mr-2"></i>Cemetery of the Hype</h2>
+                    <p class="text-xl font-bold text-center text-gray-500 italic quote mb-4">They're coming to get you, Barbara.</p>
+                    <div id="hypedMoviesContainer" class="space-y-3"></div>
+                </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12"> 
                     <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> 
                     <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> 
@@ -377,6 +382,7 @@
             const watchListContainer = document.getElementById('watchList');
             const watchedListContainer = document.getElementById('watchedList');
             const rewatchStatsContainer = document.getElementById('rewatchStatsContainer');
+            const hypedMoviesContainer = document.getElementById('hypedMoviesContainer');
             const movieDetailModal = document.getElementById('movieDetailModal');
             const ratingModal = document.getElementById('ratingModal');
             const goalModal = document.getElementById('goalModal');
@@ -842,6 +848,42 @@
                 }
             };
             
+            const renderHypedMovies = () => {
+                hypedMoviesContainer.innerHTML = '';
+                if (watchedListData.length === 0) {
+                    hypedMoviesContainer.innerHTML = '<p class="text-gray-500 text-center italic">The cemetery is quiet... Watch some movies to see the most popular ones.</p>';
+                    return;
+                }
+
+                const sortedByHype = [...watchedListData].sort((a, b) => b.popularity - a.popularity);
+                const top10Hyped = sortedByHype.slice(0, 10);
+
+                top10Hyped.forEach((movie, index) => {
+                    const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
+                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
+                    const movieEl = document.createElement('div');
+                    movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg movie-card-clickable';
+                    movieEl.dataset.action = 'openDetailModal';
+                    movieEl.dataset.movieString = movieString;
+
+                    movieEl.innerHTML = `
+                        <div class="text-3xl font-bold text-gray-600 w-12 text-center font-creepster">${index + 1}</div>
+                        <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mx-4 object-cover">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-red-600">${movie.title}</h4>
+                            <p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>
+                        </div>
+                        <div class="text-right ml-4">
+                            <div class="text-xl font-bold ${getPopularityColor(movie.popularity)}">
+                                <i class="fas fa-fire fa-fw"></i> ${Math.round(movie.popularity)}
+                            </div>
+                            <p class="text-xs text-gray-500">Popularity</p>
+                        </div>
+                    `;
+                    hypedMoviesContainer.appendChild(movieEl);
+                });
+            };
+
             const renderYearlyBreakdown = () => {
                 const yearlyButtonsContainer = document.getElementById('yearlyButtonsContainer');
                 const yearlyMoviesContainer = document.getElementById('yearlyMoviesContainer');
@@ -973,6 +1015,7 @@
                 else sortedWatchedlist = [...watchedListData].sort((a, b) => a.title.localeCompare(b.title));
                 displayMovies(sortedWatchedlist, watchedListContainer, 'watched');
                 renderRewatchStats();
+                renderHypedMovies();
                 renderYearlyBreakdown();
                 document.getElementById('uniqueMoviesCount').textContent = new Set(watchLog.map(l => l.movie_id)).size;
                 if (watchListData.length === 0) watchListContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center italic">The Viewing Room is empty. Summon some victims...</p>';
