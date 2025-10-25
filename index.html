@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -469,8 +470,8 @@
             const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
             
             const getPosterUrl = (path, size = 'w500') => {
-                if (path && path !== 'null') {
-                    return `https://image.tmdb.org/t/p/${size}${path}`;
+                if (path && typeof path === 'string' && path.trim() && path.trim() !== 'null') {
+                    return `https://image.tmdb.org/t/p/${size}${path.trim()}`;
                 }
                 const sizeMap = { 'w500': '300x450', 'w200': '80x120' };
                 const placeholderSize = sizeMap[size] || '300x450';
@@ -564,6 +565,7 @@
                 const poster = document.getElementById('modalPoster');
                 
                 poster.src = getPosterUrl(movie.poster_path, 'w500');
+                
                 poster.onload = () => {
                     try {
                         const colorThief = new ColorThief();
@@ -573,7 +575,13 @@
                         modalTitle.style.color = color;
                     } catch(e) { console.error("ColorThief Error:", e); modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; }
                 };
-                poster.onerror = () => { modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; };
+
+                poster.onerror = () => {
+                    poster.src = getPosterUrl(null, 'w500'); // Fallback to placeholder
+                    modalContent.style.borderColor = '#4b5563'; 
+                    modalTitle.style.color = '#ef4444';
+                    poster.onerror = null; // Prevent infinite loop if placeholder fails
+                };
 
                 modalTitle.textContent = movie.title;
                 document.getElementById('modalYearAndDirector').textContent = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
