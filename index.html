@@ -172,7 +172,7 @@
         <!-- Search Section -->
         <div class="relative max-w-2xl mx-auto" id="searchContainer">
             <div class="flex rounded-lg shadow-lg border border-gray-800 overflow-hidden">
-                <input type="text" id="searchInput" placeholder="Search for a horror movie..." class="w-full text-white p-4 focus:outline-none focus:ring-2 focus:ring-red-800 bg-secondary" autocomplete="off">
+                <input type="text" id="searchInput" placeholder="What's your favorite scary movie?" class="w-full text-white p-4 focus:outline-none focus:ring-2 focus:ring-red-800 bg-secondary" autocomplete="off">
                 <button id="searchButton" class="bg-red-800 hover:bg-red-900 text-white px-6 py-4 transition duration-300 btn-glow">
                     <i class="fas fa-search"></i>
                 </button>
@@ -282,15 +282,24 @@
                 </details>
 
                 <details class="border-t-2 border-dashed border-gray-700 pt-6 mt-8">
-                    <summary class="text-2xl font-bold text-red-600 gothic-divider w-full flex items-center mb-6">
-                        <i class="fas fa-chevron-down summary-chevron mr-3"></i>
-                        <span><i class="fas fa-chart-pie mr-2"></i>Advanced Charts</span>
-                    </summary>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4"> 
-                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> 
-                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> 
-                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Yearly Carnage</h3> <canvas id="yearlyWatchChart"></canvas> </div>
-                    </div>
+                     <summary class="text-2xl font-bold text-red-600 gothic-divider w-full flex items-center mb-6">
+                         <i class="fas fa-chevron-down summary-chevron mr-3"></i>
+                         <span><i class="fas fa-notes-medical mr-2"></i>The Coroner's Report</span>
+                     </summary>
+                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+                         <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800">
+                             <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3>
+                             <canvas id="directorsChart"></canvas>
+                         </div>
+                         <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800">
+                             <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3>
+                             <canvas id="genresChart"></canvas>
+                         </div>
+                         <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800">
+                             <h3 class="text-lg font-bold text-center text-red-600 mb-4">Yearly Carnage</h3>
+                             <canvas id="yearlyWatchChart"></canvas>
+                         </div>
+                     </div>
                 </details>
                 
                 <details class="border-t-2 border-dashed border-gray-700 pt-6 mt-8">
@@ -469,8 +478,8 @@
             const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
             
             const getPosterUrl = (path, size = 'w500') => {
-                if (path && path !== 'null') {
-                    return `https://image.tmdb.org/t/p/${size}${path}`;
+                if (path && typeof path === 'string' && path.trim() && path.trim() !== 'null') {
+                    return `https://image.tmdb.org/t/p/${size}${path.trim()}`;
                 }
                 const sizeMap = { 'w500': '300x450', 'w200': '80x120' };
                 const placeholderSize = sizeMap[size] || '300x450';
@@ -563,7 +572,7 @@
                 const modalTitle = document.getElementById('modalTitle');
                 const poster = document.getElementById('modalPoster');
                 
-                poster.src = getPosterUrl(movie.poster_path, 'w500');
+                // Set handlers BEFORE setting src to avoid race conditions
                 poster.onload = () => {
                     try {
                         const colorThief = new ColorThief();
@@ -571,9 +580,20 @@
                         const color = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
                         modalContent.style.borderColor = color;
                         modalTitle.style.color = color;
-                    } catch(e) { console.error("ColorThief Error:", e); modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; }
+                    } catch (e) {
+                        console.error("ColorThief Error:", e);
+                        modalContent.style.borderColor = '#4b5563';
+                        modalTitle.style.color = '#ef4444';
+                    }
                 };
-                poster.onerror = () => { modalContent.style.borderColor = '#4b5563'; modalTitle.style.color = '#ef4444'; };
+                poster.onerror = () => {
+                    poster.src = getPosterUrl(null, 'w500'); // Fallback to placeholder
+                    modalContent.style.borderColor = '#4b5563';
+                    modalTitle.style.color = '#ef4444';
+                    poster.onerror = null; // Prevent infinite loop if placeholder fails
+                };
+
+                poster.src = getPosterUrl(movie.poster_path, 'w500');
 
                 modalTitle.textContent = movie.title;
                 document.getElementById('modalYearAndDirector').textContent = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
