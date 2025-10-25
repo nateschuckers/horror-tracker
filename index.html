@@ -151,6 +151,12 @@
         .skull-rating .fa-skull { color: #4b5563; cursor: pointer; transition: color 0.2s, transform 0.2s; }
         .skull-rating .fa-skull:hover { color: #a1a1aa; transform: scale(1.1); }
         .skull-rating .fa-skull.rated, .skull-rating:hover .fa-skull.hover-rated { color: #f59e0b; }
+        
+        /* --- Collapsible Sections --- */
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+        .summary-chevron { transition: transform 0.2s ease-in-out; }
+        details[open] .summary-chevron { transform: rotate(180deg); }
     </style>
 </head>
 <body class="text-white">
@@ -244,22 +250,61 @@
                 <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-4">His name was Jason... and today is his birthday.</h2> 
                 <div id="watchedList" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 mb-12"></div> 
             </div>
-            <div id="rewatchstats" class="tab-content"> <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> </div> <div class="flex justify-between items-center mb-6 gap-4"> <h2 class="text-2xl font-bold text-red-600 gothic-divider flex-grow whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</h2> <div id="sortRewatch" class="relative sort-dropdown"> <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button> <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div> </div> </div> <div id="rewatchStatsContainer" class="space-y-4"></div> 
-                <div class="mt-12">
-                    <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-fire-alt mr-2"></i>Cemetery of the Hype</h2>
+            <div id="rewatchstats" class="tab-content"> 
+                <h2 class="text-xl font-bold text-center text-gray-500 italic quote mb-8">You're all doomed.</h2> 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 text-center"> 
+                    <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">Total Watches (All Time)</p> <p id="statTotalWatches" class="text-4xl font-bold text-white">0</p> </div> 
+                    <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">My All Time Avg. Rating</p> <p id="statAllTimeAvgRating" class="text-4xl font-bold text-white">0.0</p> </div> 
+                    <div class="bg-secondary p-4 rounded-lg border border-gray-800"> <p class="text-sm text-gray-400">All Time Avg. Pop.</p> <p id="statAllTimeAvgPop" class="text-4xl font-bold text-white">0</p> </div> 
+                </div> 
+                
+                <details class="border-t-2 border-dashed border-gray-700 pt-6" open>
+                    <summary class="text-2xl font-bold text-red-600 gothic-divider flex-grow w-full flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                             <i class="fas fa-chevron-down summary-chevron mr-3"></i>
+                             <span><i class="fas fa-sync-alt mr-2"></i>They Always Come Back</span>
+                        </div>
+                        <div id="sortRewatch" class="relative sort-dropdown">
+                            <button class="sort-btn bg-secondary border border-gray-700 text-white text-sm rounded-md focus:ring-red-500 focus:border-red-500 flex items-center py-2 px-3"> <i class="fas fa-sort-amount-down-alt mr-2"></i> <span class="sort-label">Most Watches</span> </button>
+                            <div class="sort-menu hidden absolute right-0 mt-2 w-48 bg-secondary border border-gray-700 rounded-md shadow-lg z-20"> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="watches">Most Watches</a> <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700" data-sort="title-asc">Title (A-Z)</a> </div>
+                        </div>
+                    </summary>
+                    <div id="rewatchStatsContainer" class="space-y-4 mt-4"></div>
+                </details>
+
+                <details class="border-t-2 border-dashed border-gray-700 pt-6 mt-8">
+                    <summary class="text-2xl font-bold text-red-600 gothic-divider w-full flex items-center mb-6">
+                         <i class="fas fa-chevron-down summary-chevron mr-3"></i>
+                         <span><i class="fas fa-fire-alt mr-2"></i>Cemetery of the Hype</span>
+                    </summary>
                     <p class="text-xl font-bold text-center text-gray-500 italic quote mb-4">They're coming to get you, Barbara.</p>
                     <div id="hypedMoviesContainer" class="space-y-3"></div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12"> 
-                    <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> 
-                    <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> 
-                    <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Yearly Carnage</h3> <canvas id="yearlyWatchChart"></canvas> </div>
-                </div> 
-                <div class="mt-12"> <h2 class="text-2xl font-bold text-red-600 gothic-divider mb-6"><i class="fas fa-book-dead mr-2"></i>Annual Kill Count</h2> <div id="yearlyButtonsContainer" class="flex flex-wrap gap-2 mb-6"></div> <div id="yearlyMoviesContainer" class="space-y-3"></div> </div>
+                </details>
+
+                <details class="border-t-2 border-dashed border-gray-700 pt-6 mt-8">
+                    <summary class="text-2xl font-bold text-red-600 gothic-divider w-full flex items-center mb-6">
+                        <i class="fas fa-chevron-down summary-chevron mr-3"></i>
+                        <span><i class="fas fa-chart-pie mr-2"></i>Advanced Charts</span>
+                    </summary>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4"> 
+                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Masterminds of Terror</h3> <canvas id="directorsChart"></canvas> </div> 
+                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Eras of Evil</h3> <canvas id="genresChart"></canvas> </div> 
+                        <div class="lg:col-span-1 bg-secondary p-4 rounded-lg border border-gray-800"> <h3 class="text-lg font-bold text-center text-red-600 mb-4">Yearly Carnage</h3> <canvas id="yearlyWatchChart"></canvas> </div>
+                    </div>
+                </details>
+                
+                <details class="border-t-2 border-dashed border-gray-700 pt-6 mt-8">
+                    <summary class="text-2xl font-bold text-red-600 gothic-divider w-full flex items-center mb-6">
+                        <i class="fas fa-chevron-down summary-chevron mr-3"></i>
+                        <span><i class="fas fa-book-dead mr-2"></i>Annual Kill Count</span>
+                    </summary>
+                     <div id="yearlyButtonsContainer" class="flex flex-wrap gap-2 my-6"></div> 
+                     <div id="yearlyMoviesContainer" class="space-y-3"></div>
+                </details>
+
                 <details class="mt-12 border-2 border-dashed border-gray-700 rounded-lg">
                     <summary class="p-4 cursor-pointer text-lg font-bold text-amber-500 font-creepster tracking-wider text-center">Admin Controls</summary>
                     <div class="p-6 border-t border-gray-700">
-                        <!-- Data Import Section -->
                         <div id="importer" class="p-6 rounded-lg shadow-lg bg-secondary mb-6">
                             <h3 class="text-xl font-bold text-center text-amber-500 mb-4 font-creepster tracking-wider">The Import Cauldron</h3>
                             <p class="text-center text-gray-400 text-sm mb-4">For a one-time import of historical data from a CSV file.</p>
@@ -268,7 +313,6 @@
                                 <i class="fas fa-magic mr-2"></i>Import History
                             </button>
                         </div>
-                        <!-- Danger Zone -->
                         <div id="dangerZone" class="p-6 rounded-lg border-2 border-dashed border-red-900 shadow-lg bg-secondary">
                             <h3 class="text-xl font-bold text-center text-red-500 mb-4 font-creepster tracking-wider">Danger Zone</h3>
                             <p class="text-center text-gray-400 text-sm mb-4">These actions cannot be undone. Proceed with caution.</p>
@@ -424,6 +468,15 @@
             const getRatingColor = rating => { if (rating >= 7.6) return 'text-red-600'; if (rating >= 5.1) return 'text-green-400'; if (rating >= 2.6) return 'text-yellow-400'; return 'text-blue-400'; };
             const getPopularityColor = popularity => { if (popularity > 1000) return 'text-red-600'; if (popularity > 200) return 'text-green-400'; if (popularity > 50) return 'text-yellow-400'; return 'text-blue-400'; };
             
+            const getPosterUrl = (path, size = 'w500') => {
+                if (path && path !== 'null') {
+                    return `https://image.tmdb.org/t/p/${size}${path}`;
+                }
+                const sizeMap = { 'w500': '300x450', 'w200': '80x120' };
+                const placeholderSize = sizeMap[size] || '300x450';
+                return `https://placehold.co/${placeholderSize}/991b1b/white?text=No+Image`;
+            };
+            
             const calculateAverage = (movieList, key, usePersonalRating = false) => {
                 if (movieList.length === 0) return { avg: 0 };
                 let ratedMovies = movieList;
@@ -510,7 +563,7 @@
                 const modalTitle = document.getElementById('modalTitle');
                 const poster = document.getElementById('modalPoster');
                 
-                poster.src = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+                poster.src = getPosterUrl(movie.poster_path, 'w500');
                 poster.onload = () => {
                     try {
                         const colorThief = new ColorThief();
@@ -794,7 +847,7 @@
                         `;
                     }
 
-                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/300x450/991b1b/white?text=No+Image';
+                    const posterUrl = getPosterUrl(movie.poster_path, 'w500');
                     movieElement.innerHTML = `<div class="movie-card-clickable flex-grow" data-action="openDetailModal" data-movie-string='${movieString}'><img src="${posterUrl}" alt="${movie.title}" class="w-full h-auto rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x450/991b1b/white?text=No+Image';"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>${listType === 'watched' ? getPersonalRatingHTML(movie.personal_rating) : ''}</div><div class="mt-4 pt-4 border-t border-gray-700">${buttons}</div>`;
                     container.appendChild(movieElement);
                 });
@@ -832,7 +885,7 @@
                     const count = watchCounts[movie.id] || 0;
                     const statEl = document.createElement('div');
                     statEl.className = 'flex items-center border border-gray-800 p-3 rounded-lg bg-secondary';
-                    statEl.innerHTML = `<img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/80x120/991b1b/white?text=N/A'}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div><div class="mt-2">${getPersonalRatingHTML(movie.personal_rating)}</div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p><button data-action="openRatingModalFromList" data-movie-string='${movieString}' class="mt-2 bg-gray-700 hover:bg-red-800 text-white font-bold py-1 px-3 text-xs rounded btn-glow">Rate</button></div>`;
+                    statEl.innerHTML = `<img src="${getPosterUrl(movie.poster_path, 'w200')}" alt="${movie.title}" class="w-20 h-[120px] rounded-md mr-4 object-cover"><div class="flex-grow"><h3 class="text-lg font-bold text-red-600">${movie.title}</h3><p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div><div class="mt-2">${getPersonalRatingHTML(movie.personal_rating)}</div></div><div class="text-center ml-4"><p class="text-3xl font-bold text-white">${count}</p><p class="text-xs text-gray-500">Watches</p><button data-action="openRatingModalFromList" data-movie-string='${movieString}' class="mt-2 bg-gray-700 hover:bg-red-800 text-white font-bold py-1 px-3 text-xs rounded btn-glow">Rate</button></div>`;
                     rewatchStatsContainer.appendChild(statEl);
                 });
 
@@ -860,7 +913,6 @@
 
                 top10Hyped.forEach((movie, index) => {
                     const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
-                    const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
                     const movieEl = document.createElement('div');
                     movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg movie-card-clickable';
                     movieEl.dataset.action = 'openDetailModal';
@@ -868,7 +920,7 @@
 
                     movieEl.innerHTML = `
                         <div class="text-3xl font-bold text-gray-600 w-12 text-center font-creepster">${index + 1}</div>
-                        <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mx-4 object-cover">
+                        <img src="${getPosterUrl(movie.poster_path, 'w200')}" class="w-12 h-[72px] rounded-md mx-4 object-cover">
                         <div class="flex-grow">
                             <h4 class="font-bold text-red-600">${movie.title}</h4>
                             <p class="text-sm text-gray-400">${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'}</p>
@@ -912,11 +964,10 @@
 
                     moviesForYear.forEach(movie => {
                         const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
-                        const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A';
                         const movieEl = document.createElement('div');
                         movieEl.className = 'flex items-center bg-secondary border border-gray-800 p-2 rounded-lg';
                         movieEl.innerHTML = `
-                            <img src="${posterUrl}" class="w-12 h-[72px] rounded-md mr-4 object-cover">
+                            <img src="${getPosterUrl(movie.poster_path, 'w200')}" class="w-12 h-[72px] rounded-md mr-4 object-cover">
                             <div class="flex-grow">
                                 <h4 class="font-bold text-red-600">${movie.title}</h4>
                                 <p class="text-sm text-gray-400">${movie.director || 'Unknown Director'}</p>
@@ -1098,7 +1149,7 @@
                     const movieString = encodeURIComponent(JSON.stringify(movie)).replace(/'/g, "%27");
                     const resultEl = document.createElement('div');
                     resultEl.className = 'p-2 hover:bg-gray-700 flex items-center space-x-3';
-                    resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" data-action="openDetailModal" data-movie-string='${movieString}'><img src="${movie.poster_path ? `https://image.tmdb.org/t/p/w200${movie.poster_path}` : 'https://placehold.co/50x75/991b1b/white?text=N/A'}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" data-action="addToWatchList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" data-action="addToWatchedList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
+                    resultEl.innerHTML = `<div class="flex items-center space-x-3 flex-grow movie-card-clickable" data-action="openDetailModal" data-movie-string='${movieString}'><img src="${getPosterUrl(movie.poster_path, 'w200')}" class="w-10 h-[60px] rounded-sm object-cover" alt="${movie.title}"><div class="flex-grow"><p class="font-bold text-sm">${movie.title} (${movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'})</p><div class="flex items-center space-x-3 mt-1 text-xs"><span class="${getRatingColor(movie.vote_average)}"><i class="fas fa-star fa-fw mr-1"></i>${movie.vote_average.toFixed(1)}</span><span class="${getPopularityColor(movie.popularity)}"><i class="fas fa-fire fa-fw mr-1"></i>${Math.round(movie.popularity)}</span></div></div></div><div class="flex space-x-2"><button title="Add to Watch List" data-action="addToWatchList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs disabled:opacity-50 disabled:cursor-not-allowed btn-glow" ${watchListData.some(m=>m.id===movie.id) ? 'disabled' : ''}><i class="fas fa-eye text-blue-400"></i></button><button title="Mark as Watched" data-action="addToWatchedList" data-movie-string='${movieString}' class="bg-gray-800 hover:bg-gray-700 p-2 rounded-full text-xs btn-glow"><i class="fas fa-skull-crossbones text-gray-200"></i></button></div>`;
                     liveSearchResults.appendChild(resultEl);
                 });
                 const seeMoreEl = document.createElement('button');
