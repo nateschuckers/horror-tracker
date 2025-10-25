@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1037,7 +1036,7 @@
                     }
                     return acc;
                 }, {});
-                const sortedDecades = Object.entries(decadeCounts).sort((a,b]) => parseInt(a[0]) - parseInt(b[0]));
+                const sortedDecades = Object.entries(decadeCounts).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
                 genresChartInstance = new Chart(document.getElementById('genresChart'), { type: 'pie', data: { labels: sortedDecades.map(d => d[0]), datasets: [{ data: sortedDecades.map(d => d[1]), backgroundColor: CHART_COLORS }] }, options: { responsive: true, plugins: { legend: { labels: { color: '#a1a1aa' } } } } });
                 
                 // Yearly Watch Chart
